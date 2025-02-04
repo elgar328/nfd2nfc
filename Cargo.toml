@@ -1,0 +1,17 @@
+[package]
+name = "nfd2nfc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anstyle = "1.0.10"
+chrono = "0.4.39"
+clap = { version = "4.5.27", features = ["derive"] }
+fern = "0.7.1"
+log = "0.4.25"
+notify = "8.0.0"
+oslog = "0.2.0"
+rayon = "1.10.0"
+toml = "0.8.19"
+unicode-normalization = "0.1.24"
+
