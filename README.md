@@ -14,8 +14,8 @@ Help Documentation – a concise overview of nfd2nfc’s commands, options, and 
 ### NFD vs. NFC
 **Background & Test Setup:**  
 - 10,000 sample folders and files were generated in the `tools/test_data` directory using the `tools/generate_test_data.py` script.
-- A zellij session running `yazi` was used to visually inspect the test data.
-- Note: zellij 0.41.2 does not properly handle NFD normalization.
+- A [zellij](https://zellij.dev) session running [yazi](https://github.com/sxyazi/yazi) was used to visually inspect the test data.
+- Note: [zellij 0.41.2](https://github.com/zellij-org/zellij/releases/tag/v0.41.2) does not properly handle NFD normalization.
 - Conversion commands used:
   - Convert from NFD to NFC: `nfd2nfc -r .`
   - Convert from NFC back to NFD: `nfd2nfc -rR .`
