@@ -21,7 +21,6 @@ use std::path::Path;
     after_help = "\x1b[1;33;4mAdditional Info:\x1b[0m
   For more details, visit: https://github.com/elgar328/nfd2nfc
 
-
 \x1b[1;33;4mExamples:\x1b[0m
   Convert a file:
       \x1b[32mnfd2nfc\x1b[0m file.txt

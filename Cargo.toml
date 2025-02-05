@@ -1,9 +1,8 @@
-[package]
-name = "nfd2nfc"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["nfd2nfc", "nfd2nfc-watcher"]
+resolver = "2"
 
-[dependencies]
+[workspace.dependencies]
 anstyle = "1.0.10"
 chrono = "0.4.39"
 clap = { version = "4.5.27", features = ["derive"] }
@@ -14,4 +13,3 @@ oslog = "0.2.0"
 rayon = "1.10.0"
 toml = "0.8.19"
 unicode-normalization = "0.1.24"
-
