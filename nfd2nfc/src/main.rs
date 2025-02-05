@@ -15,11 +15,9 @@ use std::path::Path;
     styles=get_styles(),
     color = clap::ColorChoice::Always,
     about = "\x1b[1;33;4mOverview:\x1b[0m
-  nfd2nfc converts filenames between NFD and NFC formats to ensure compatibility across macOS, Windows, and Linux.
-  macOS stores filenames in NFD (decomposed form) while other systems typically use NFC (composed form).
-  This discrepancy can lead to filename issues when transferring files between operating systems.",
+  \x1b[32mnfd2nfc\x1b[0m is a tool that converts filenames between NFD and NFC for consistent cross-platform compatibility. On macOS, filenames are stored in the decomposed NFD format, while most other systems use the composed NFC format. This difference can lead to issues when transferring files between operating systems.",
     after_help = "\x1b[1;33;4mAdditional Info:\x1b[0m
-  For more details, visit: https://github.com/elgar328/nfd2nfc
+  For more details, visit: \x1b[4mhttps://github.com/elgar328/nfd2nfc\x1b[0m
 
 \x1b[1;33;4mExamples:\x1b[0m
   Convert a file:
@@ -70,7 +68,7 @@ struct Cli {
     #[arg(short = 'R', long = "reverse")]
     reverse: bool,
 
-    /// Increase verbosity (use -v for warnings, -vv for info, -vvv for debug, -vvvv for trace)
+    /// Increase verbosity (-v warnings, -vv info, -vvv debug, -vvvv trace)
     #[arg(short = 'v', long = "verbose", action = clap::ArgAction::Count)]
     verbose: u8,
 }
