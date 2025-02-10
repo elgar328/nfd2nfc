@@ -1,2 +1,3 @@
 /target
-/tools/test_data
+tools/test_data
+.vscode
