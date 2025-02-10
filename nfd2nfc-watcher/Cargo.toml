@@ -4,4 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
+notify = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+dirs = { workspace = true }
+once_cell = { workspace = true }
+tokio = { workspace = true }
+unicode-normalization = { workspace = true }
+oslog = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
