@@ -12,14 +12,14 @@ use unicode_normalization::{is_nfc, is_nfd, UnicodeNormalization};
 /// if the name is likely in NFD, it renames it to NFC.
 pub fn heuristic_normalize_name_to_nfc(target_path: &Path) {
     info!(
-        "Starting heuristic conversion to NFC for: {:?}",
-        target_path
+        "Starting heuristic conversion to NFC for: {}",
+        target_path.display()
     );
 
     let target_name = match target_path.file_name() {
         Some(name) => name,
         None => {
-            error!("Invalid file/folder name: {:?}", target_path);
+            error!("Invalid file/folder name: {}", target_path.display());
             return;
         }
     };
@@ -29,7 +29,7 @@ pub fn heuristic_normalize_name_to_nfc(target_path: &Path) {
     let nfc_name: String = target_name_str.nfc().collect();
 
     if nfd_name == nfc_name {
-        debug!("No conversion needed for: {:?}", target_path);
+        debug!("No conversion needed for: {}", target_path.display());
         return;
     }
 
@@ -37,10 +37,11 @@ pub fn heuristic_normalize_name_to_nfc(target_path: &Path) {
     let nfd_path = target_path.with_file_name(nfd_name);
 
     match fs::rename(&nfd_path, &nfc_path) {
-        Ok(_) => info!("Heuristically converted {:?} to NFC", nfc_path),
+        Ok(_) => info!("Heuristically converted {} to NFC", nfc_path.display()),
         Err(e) => error!(
-            "Failed to heuristically convert {:?} to NFC: {}",
-            target_path, e
+            "Failed to heuristically convert {} to NFC: {}",
+            target_path.display(),
+            e
         ),
     }
 }
@@ -50,14 +51,14 @@ pub fn heuristic_normalize_name_to_nfc(target_path: &Path) {
 /// if the name is likely in NFC, it renames it to NFD.
 pub fn heuristic_normalize_name_to_nfd(target_path: &Path) {
     info!(
-        "Starting heuristic conversion to NFD for: {:?}",
-        target_path
+        "Starting heuristic conversion to NFD for: {}",
+        target_path.display()
     );
 
     let target_name = match target_path.file_name() {
         Some(name) => name,
         None => {
-            error!("Invalid file/folder name: {:?}", target_path);
+            error!("Invalid file/folder name: {}", target_path.display());
             return;
         }
     };
@@ -67,7 +68,7 @@ pub fn heuristic_normalize_name_to_nfd(target_path: &Path) {
     let nfc_name: String = target_name_str.nfc().collect();
 
     if nfd_name == nfc_name {
-        debug!("No conversion needed for: {:?}", target_path);
+        debug!("No conversion needed for: {}", target_path.display());
         return;
     }
 
@@ -75,28 +76,30 @@ pub fn heuristic_normalize_name_to_nfd(target_path: &Path) {
     let nfc_path = target_path.with_file_name(nfc_name);
 
     match fs::rename(&nfc_path, &nfd_path) {
-        Ok(_) => info!("Heuristically converted {:?} to NFD", nfd_path),
+        Ok(_) => info!("Heuristically converted {} to NFD", nfd_path.display()),
         Err(e) => error!(
-            "Failed to heuristically convert {:?} to NFD: {}",
-            target_path, e
+            "Failed to heuristically convert {} to NFD: {}",
+            target_path.display(),
+            e
         ),
     }
 }
 
 pub fn normalize_names_to_nfc(target_folder: &Path, recursive: bool) {
     info!(
-        "Starting folder conversion to NFC for: {:?} (recursive: {})",
-        target_folder, recursive
+        "Starting folder conversion to NFC for: {} (recursive: {})",
+        target_folder.display(),
+        recursive
     );
     let mut queue = VecDeque::new();
     queue.push_back(target_folder.to_path_buf());
 
     while let Some(current_dir) = queue.pop_front() {
-        debug!("Processing directory: {:?}", current_dir);
+        debug!("Processing directory: {}", current_dir.display());
         let entries: Vec<_> = match fs::read_dir(&current_dir) {
             Ok(entries) => entries.filter_map(|entry| entry.ok()).collect(),
             Err(e) => {
-                error!("Failed to read directory {:?}: {}", current_dir, e);
+                error!("Failed to read directory {}: {}", current_dir.display(), e);
                 continue;
             }
         };
@@ -109,7 +112,7 @@ pub fn normalize_names_to_nfc(target_folder: &Path, recursive: bool) {
 
                 if let Some(name) = path.file_name() {
                     if name == "." || name == ".." {
-                        debug!("Skipping dot entry: {:?}", path);
+                        debug!("Skipping dot entry: {}", path.display());
                         return None;
                     }
 
@@ -118,14 +121,14 @@ pub fn normalize_names_to_nfc(target_folder: &Path, recursive: bool) {
                         let nfc_name: String = original_name.nfc().collect();
                         new_path = path.with_file_name(&nfc_name);
                         match fs::rename(&path, &new_path) {
-                            Ok(_) => info!("Converted {:?} to NFC", new_path),
+                            Ok(_) => info!("Converted {} to NFC", new_path.display()),
                             Err(e) => {
-                                error!("Failed to convert {:?} to NFC: {}", path, e);
+                                error!("Failed to convert {} to NFC: {}", path.display(), e);
                                 new_path = path.clone();
                             }
                         }
                     } else {
-                        debug!("Entry already in NFC: {:?}", path);
+                        debug!("Entry already in NFC: {}", path.display());
                     }
                 }
 
@@ -138,13 +141,13 @@ pub fn normalize_names_to_nfc(target_folder: &Path, recursive: bool) {
                             Some(new_path)
                         } else {
                             debug!(
-                                "Skipping directory (symlink or different FS): {:?}",
-                                new_path
+                                "Skipping directory (symlink or different FS): {}",
+                                new_path.display()
                             );
                             None
                         }
                     } else {
-                        error!("Failed to get metadata for {:?}", new_path);
+                        error!("Failed to get metadata for {}", new_path.display());
                         None
                     }
                 } else {
@@ -158,25 +161,26 @@ pub fn normalize_names_to_nfc(target_folder: &Path, recursive: bool) {
         }
     }
     info!(
-        "Completed folder conversion to NFC for: {:?}",
-        target_folder
+        "Completed folder conversion to NFC for: {}",
+        target_folder.display()
     );
 }
 
 pub fn normalize_names_to_nfd(target_folder: &Path, recursive: bool) {
     info!(
-        "Starting folder conversion to NFD for: {:?} (recursive: {})",
-        target_folder, recursive
+        "Starting folder conversion to NFD for: {} (recursive: {})",
+        target_folder.display(),
+        recursive
     );
     let mut queue = VecDeque::new();
     queue.push_back(target_folder.to_path_buf());
 
     while let Some(current_dir) = queue.pop_front() {
-        debug!("Processing directory: {:?}", current_dir);
+        debug!("Processing directory: {}", current_dir.display());
         let entries: Vec<_> = match fs::read_dir(&current_dir) {
             Ok(entries) => entries.filter_map(|entry| entry.ok()).collect(),
             Err(e) => {
-                error!("Failed to read directory {:?}: {}", current_dir, e);
+                error!("Failed to read directory {}: {}", current_dir.display(), e);
                 continue;
             }
         };
@@ -189,7 +193,7 @@ pub fn normalize_names_to_nfd(target_folder: &Path, recursive: bool) {
 
                 if let Some(name) = path.file_name() {
                     if name == "." || name == ".." {
-                        debug!("Skipping dot entry: {:?}", path);
+                        debug!("Skipping dot entry: {}", path.display());
                         return None;
                     }
 
@@ -198,14 +202,14 @@ pub fn normalize_names_to_nfd(target_folder: &Path, recursive: bool) {
                         let nfd_name: String = original_name.nfd().collect();
                         new_path = path.with_file_name(&nfd_name);
                         match fs::rename(&path, &new_path) {
-                            Ok(_) => info!("Converted {:?} to NFD", new_path),
+                            Ok(_) => info!("Converted {} to NFD", new_path.display()),
                             Err(e) => {
-                                error!("Failed to convert {:?} to NFD: {}", path, e);
+                                error!("Failed to convert {} to NFD: {}", path.display(), e);
                                 new_path = path.clone();
                             }
                         }
                     } else {
-                        debug!("Entry already in NFD: {:?}", path);
+                        debug!("Entry already in NFD: {}", path.display());
                     }
                 }
 
@@ -218,13 +222,13 @@ pub fn normalize_names_to_nfd(target_folder: &Path, recursive: bool) {
                             Some(new_path)
                         } else {
                             debug!(
-                                "Skipping directory (symlink or different FS): {:?}",
-                                new_path
+                                "Skipping directory (symlink or different FS): {}",
+                                new_path.display()
                             );
                             None
                         }
                     } else {
-                        error!("Failed to get metadata for {:?}", new_path);
+                        error!("Failed to get metadata for {}", new_path.display());
                         None
                     }
                 } else {
@@ -238,8 +242,8 @@ pub fn normalize_names_to_nfd(target_folder: &Path, recursive: bool) {
         }
     }
     info!(
-        "Completed folder conversion to NFD for: {:?}",
-        target_folder
+        "Completed folder conversion to NFD for: {}",
+        target_folder.display()
     );
 }
 

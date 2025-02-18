@@ -1,0 +1,14 @@
+[package]
+name = "nfd2nfc-common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dirs = { workspace = true }
+log = { workspace = true }
+fern = { workspace = true }
+oslog = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
