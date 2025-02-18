@@ -2,6 +2,9 @@
 members = ["nfd2nfc", "nfd2nfc-common", "nfd2nfc-watcher"]
 resolver = "2"
 
+[workspace.package]
+version = "1.0.0"
+
 [workspace.dependencies]
 anstyle = "1.0.10"
 chrono = "0.4.39"

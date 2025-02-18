@@ -427,7 +427,7 @@ dependencies = [
 
 [[package]]
 name = "nfd2nfc"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anstyle",
  "clap",
@@ -441,7 +441,7 @@ dependencies = [
 
 [[package]]
 name = "nfd2nfc-common"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "dirs",
  "fern",
@@ -455,7 +455,7 @@ dependencies = [
 
 [[package]]
 name = "nfd2nfc-watcher"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "log",
  "nfd2nfc-common",
