@@ -1,20 +1,16 @@
-mod config;
 mod handler;
 mod watcher;
-use config::HOME_DIR;
 use log::info;
-use log::LevelFilter;
+use nfd2nfc_common::config;
+use nfd2nfc_common::constants::HOME_DIR;
+use nfd2nfc_common::logger::{init_logger, LogBackend};
 use once_cell::sync::Lazy;
-use oslog::OsLogger;
 
 #[tokio::main]
 async fn main() {
-    OsLogger::new("com.github.elgar328.nfd2nfc")
-        .level_filter(LevelFilter::Info)
-        .init()
-        .unwrap();
-
-    info!("Starting nfd2nfc-watcher daemon...");
+    let verbose = 3;
+    init_logger(LogBackend::OSLog, verbose);
+    info!("Launching nfd2nfc-watcher service...");
 
     // Force HOME_DIR initialization via lazy singleton.
     // If HOME is not set, exit normally (code 0) to prevent auto-restart.

@@ -1,8 +1,11 @@
 use crate::config::Config;
 use crate::handler;
 use log::{error, info};
+use nfd2nfc_common::constants::WATCHER_LIVE_MESSAGE;
 use notify::{Error as NotifyError, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use std::sync::Arc;
 use tokio::spawn;
+use tokio::sync::Semaphore;
 use unicode_normalization::is_nfc;
 
 pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
@@ -14,19 +17,19 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
             let rt_handle = rt_handle.clone();
             rt_handle.spawn(async move {
                 if let Err(e) = tx.send(res).await {
-                    error!("Failed to send file event: {:?}", e);
+                    error!("Failed to send file event: {}", e);
                 }
             });
         },
         notify::Config::default(),
     ) {
         Ok(w) => {
-            info!("File system event watcher initialized successfully.");
+            info!(" + File system event watcher initialized.");
             w
         }
         Err(e) => {
             error!(
-                "Failed to initialize file system event watcher: {:?}. Exiting normally (exit code 0).",
+                "Failed to initialize file system event watcher: {}. Exiting normally (exit code 0).",
                 e
             );
             std::process::exit(0);
@@ -36,20 +39,27 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
     // Register recursive watch paths.
     for path in &config.recursive_watch_paths {
         match watcher.watch(&path, RecursiveMode::Recursive) {
-            Ok(()) => info!("Monitoring recursive path: {:?}", path),
-            Err(e) => error!("Failed to watch recursive path: {:?} - {:?}", path, e),
+            Ok(()) => info!(" + Watching recursive path: {}", path.display()),
+            Err(e) => error!("Failed to watch recursive path: {} - {}", path.display(), e),
         }
     }
 
     // Register non-recursive watch paths.
     for path in &config.non_recursive_watch_paths {
         match watcher.watch(&path, RecursiveMode::NonRecursive) {
-            Ok(()) => info!("Monitoring non-recursive path: {:?}", path),
-            Err(e) => error!("Failed to watch non-recursive path: {:?} - {:?}", path, e),
+            Ok(()) => info!(" + Watching non-recursive path: {}", path.display()),
+            Err(e) => error!(
+                "Failed to watch non-recursive path: {} - {}",
+                path.display(),
+                e
+            ),
         }
     }
 
-    info!("File system monitoring started.");
+    info!("{}", WATCHER_LIVE_MESSAGE);
+
+    // Limit the number of concurrently executing tasks using a semaphore.
+    let semaphore = Arc::new(Semaphore::new(200));
 
     // Process events in an asynchronous loop.
     while let Some(res) = rx.recv().await {
@@ -62,9 +72,9 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
 
                 // Skip events for paths in the exclusion list.
                 if config
-                    .recursive_exclude_paths
+                    .recursive_ignore_paths
                     .iter()
-                    .any(|exclude| event_path.starts_with(exclude))
+                    .any(|ignore| event_path.starts_with(ignore))
                 {
                     continue;
                 }
@@ -76,11 +86,13 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
                 if is_nfc(file_name) {
                     continue;
                 }
+                let sem_clone = semaphore.clone();
                 spawn(async move {
+                    let _permit = sem_clone.acquire_owned().await.unwrap();
                     handler::handle_event(event).await;
                 });
             }
-            Err(e) => error!("FS watcher error: {:?}", e),
+            Err(e) => error!("FS watcher error: {}", e),
         }
     }
 }
