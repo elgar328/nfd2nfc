@@ -11,7 +11,7 @@ use std::path::Path;
 #[derive(Parser, Debug)]
 #[command(
     name = "nfd2nfc",
-    version = "1.0.0",
+    version = std::env!("CARGO_PKG_VERSION"),
     author = "elgar328",
     styles=get_styles(),
     color = clap::ColorChoice::Always,
