@@ -2,14 +2,11 @@
 nfd2nfc is a macOS CLI tool that converts filenames between NFD and NFC for consistent cross-platform compatibility. It also includes a background service that continuously monitors specified folders and automatically applies the necessary conversions in real time.
 
 
-⚠️ **Note:** The background service for automatic monitoring (`nfd2nfc-watcher`) is not yet implemented. Currently, only the manual conversion tool (`nfd2nfc`) is available.
+## Conversion mode
 
-## nfd2nfc
+**nfd2nfc** converts filenames between NFD and NFC to ensure consistent cross-platform compatibility. For background monitoring, use the watch subcommand. See `nfd2nfc watch --help` for details.
 
-Help Documentation – a concise overview of nfd2nfc’s commands, options, and usage examples.
-
-<img width="750" alt="Image" src="https://github.com/user-attachments/assets/8eab1691-745d-4136-9c85-48cecd09e8fa" />
-
+<img width="750" alt="Image" src="https://github.com/user-attachments/assets/e45d7fb6-1a64-42b3-a99c-5b7600c05473" />
 
 ### NFD vs. NFC
 **Background & Test Setup:**  
@@ -26,6 +23,48 @@ Below are screenshots that illustrate the conversion results.
 
 <img width="373" alt="Image" src="https://github.com/user-attachments/assets/a23c4d79-d33f-472f-af3c-456db31cf42e" />
 
-## nfd2nfc-watcher
 
-Not yet implemented.
+## Watch mode
+
+**nfd2nfc-watcher** operates as a background service that continuously monitors specified paths and converts filesystem entry names from NFD to NFC. Manage this service with the `nfd2nfc watch` subcommand. For further details, run `nfd2nfc watch <COMMAND> --help`.
+
+<img width="750" alt="Image" src="https://github.com/user-attachments/assets/d65bd952-47f9-4f8a-b8f9-7e950af56f9f" />
+
+
+## Installation
+
+You can install nfd2nfc via Homebrew using our tap. This installation includes two executables (nfd2nfc and nfd2nfc-watcher) and automatically registers the watcher service during installation.
+
+### Steps
+
+1.	**Add the Homebrew Tap:**
+``` bash 
+brew tap elgar328/nfd2nfc
+```
+
+2.	**Install nfd2nfc:**
+``` bash
+brew install nfd2nfc
+```
+
+3.	**Automatic Service Registration:**
+
+During installation, the Homebrew package automatically sets up and launches the nfd2nfc-watcher so that it runs quietly in the background as a user agent.
+
+5.	**Managing the Watcher Service:**
+
+By default, no paths are set to be monitored. To enable automatic filename conversion, you must add directories to the watch list. For example, to have the watcher automatically process your Desktop folder and all its subdirectories, run:
+``` bash
+nfd2nfc watch add ~/Desktop -r
+```
+
+After adding a watch path, you can verify that it was successfully added by running the command below. This command displays all paths currently being monitored, so you can quickly check that your Desktop folder is included.
+``` bash
+nfd2nfc watch list
+```
+
+For more details, see the help documentation:
+``` bash
+nfd2nfc -–help
+nfd2nfc watch -–help
+```
