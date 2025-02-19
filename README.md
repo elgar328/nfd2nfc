@@ -47,11 +47,19 @@ brew tap elgar328/nfd2nfc
 brew install nfd2nfc
 ```
 
-3.	**Automatic Service Registration:**
+3.	**Start the Service:**
 
-During installation, the Homebrew package automatically sets up and launches the nfd2nfc-watcher so that it runs quietly in the background as a user agent.
+After installation, register and start the background service by running:
+``` bash
+brew services start nfd2nfc
+```
 
-5.	**Managing the Watcher Service:**
+Alternatively, if you don’t need a background service, you can run the watcher manually:
+``` bash
+nfd2nfc-watcher
+```
+
+4.	**Managing the Watcher Service:**
 
 By default, no paths are set to be monitored. To enable automatic filename conversion, you must add directories to the watch list. For example, to have the watcher automatically process your Desktop folder and all its subdirectories, run:
 ``` bash
