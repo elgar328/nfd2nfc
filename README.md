@@ -33,7 +33,7 @@ Below are screenshots that illustrate the conversion results.
 
 ## Installation
 
-You can install nfd2nfc via Homebrew using our tap. This installation includes two executables (nfd2nfc and nfd2nfc-watcher) and automatically registers the watcher service during installation.
+You can install nfd2nfc via Homebrew using our tap. This installation provides two executables: nfd2nfc and nfd2nfc-watcher.
 
 ### Steps
 
