@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process;
 
 pub const WATCHER_LIVE_MESSAGE: &str = "nfd2nfc-watcher live: monitoring events.";
-pub const NFD2NFC_SERVICE_LABEL: &str = "com.github.elgar328.nfd2nfc";
+pub const NFD2NFC_SERVICE_LABEL: &str = "homebrew.mxcl.nfd2nfc";
 pub const NFD2NFC_CONFIG_ENV: &str = "NFD2NFC_CONFIG";
 
 pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
