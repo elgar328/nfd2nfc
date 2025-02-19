@@ -221,6 +221,7 @@ pub fn launch_watcher_and_confirm() -> Result<String, String> {
     let plist = &*PLIST_PATH;
     let status = Command::new("launchctl")
         .arg("load")
+        .arg("-w")
         .arg(plist)
         .status()
         .map_err(|e| format!("Failed to start watcher: {}", e))?;
@@ -258,7 +259,11 @@ pub fn launch_watcher_and_confirm() -> Result<String, String> {
 
 fn unload_watcher_service() {
     let plist = &*PLIST_PATH;
-    let status = Command::new("launchctl").arg("unload").arg(plist).status();
+    let status = Command::new("launchctl")
+        .arg("unload")
+        .arg("-w")
+        .arg(plist)
+        .status();
 
     match status {
         Ok(s) if s.success() => {}
