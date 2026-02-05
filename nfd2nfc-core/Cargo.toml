@@ -1,14 +1,20 @@
 [package]
-name = "nfd2nfc-common"
+name = "nfd2nfc-core"
 version = { workspace = true }
 edition = "2021"
 
 [dependencies]
 dirs = { workspace = true }
-log = { workspace = true }
 fern = { workspace = true }
-oslog = { workspace = true }
+libc = { workspace = true }
+log = { workspace = true }
 once_cell = { workspace = true }
+oslog = { workspace = true }
+rayon = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
+unicode-normalization = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

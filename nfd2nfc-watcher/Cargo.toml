@@ -4,10 +4,9 @@ version = { workspace = true }
 edition = "2021"
 
 [dependencies]
+log = { workspace = true }
+nfd2nfc-core = { path = "../nfd2nfc-core" }
 notify = { workspace = true }
-toml = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
 unicode-normalization = { workspace = true }
-log = { workspace = true }
-nfd2nfc-common = { path = "../nfd2nfc-common" }

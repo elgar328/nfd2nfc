@@ -1,78 +1,93 @@
 # nfd2nfc
-nfd2nfc is a macOS CLI tool that converts filenames between NFD and NFC for consistent cross-platform compatibility. It also includes a background service that continuously monitors specified folders and automatically applies the necessary conversions in real time.
 
+A macOS tool that watches directories and converts NFD filenames to NFC in real time, ensuring cross-platform compatibility.
 
-## Conversion mode
+## What is NFD/NFC?
 
-**nfd2nfc** converts filenames between NFD and NFC to ensure consistent cross-platform compatibility. For background monitoring, use the watch subcommand. See `nfd2nfc watch --help` for details.
+Unicode has two main ways to represent composed characters such as Korean Hangul, accented Latin (é, ü, ñ), Japanese kana (が, ぱ), and more:
 
-<img width="750" alt="Image" src="https://github.com/user-attachments/assets/e45d7fb6-1a64-42b3-a99c-5b7600c05473" />
+- **NFC** (Composed): One codepoint per character — `가` = `U+AC00`
+- **NFD** (Decomposed): Base + combining marks — `가` = `U+1100 U+1161`
 
-### NFD vs. NFC
-**Background & Test Setup:**  
-- 10,000 sample folders and files were generated in the `tools/test_data` directory using the `tools/generate_test_data.py` script.
-- A [zellij](https://zellij.dev) session running [yazi](https://github.com/sxyazi/yazi) was used to visually inspect the test data.
-- Note: [zellij 0.41.2](https://github.com/zellij-org/zellij/releases/tag/v0.41.2) does not properly handle NFD normalization.
-- Conversion commands used:
-  - Convert from NFD to NFC: `nfd2nfc -r .`
-  - Convert from NFC back to NFD: `nfd2nfc -rR .`
+macOS stores filenames in NFD, while Windows and Linux use NFC. This mismatch causes problems when sharing files across platforms:
 
-Below are screenshots that illustrate the conversion results.
+- Hangul syllables appear as decomposed jamo (e.g., 한글 → ㅎㅏㄴㄱㅡㄹ)
+- Accented characters may render or sort incorrectly
+- Git sees identical files as untracked or modified
+- Cloud sync and archive tools fail to match paths
 
-<img width="373" alt="Image" src="https://github.com/user-attachments/assets/d1d55f90-ff66-4e87-9958-3f17ef954ca3" />
+**nfd2nfc** provides an interactive TUI and a background watcher service that handles conversion automatically.
 
-<img width="373" alt="Image" src="https://github.com/user-attachments/assets/a23c4d79-d33f-472f-af3c-456db31cf42e" />
+## Features
 
+- **Real-time monitoring** — Converts NFD filenames to NFC as soon as they appear
+- **Flexible watch paths** — Mix `watch`/`ignore` actions with `recursive`/`children` modes to control exactly which directories are monitored
+- **Manual conversion** — Browse the filesystem and convert names between NFD and NFC on the spot
+- **Log viewer** — Review past watcher logs or follow new entries live
+- **Intuitive controls** — Every keybinding is shown on screen, and full mouse support is included
 
-## Watch mode
+## Home
 
-**nfd2nfc-watcher** operates as a background service that continuously monitors specified paths and converts filesystem entry names from NFD to NFC. Manage this service with the `nfd2nfc watch` subcommand. For further details, run `nfd2nfc watch <COMMAND> --help`.
+<img src="assets/home.png" alt="Home" width="750" />
 
-<img width="750" alt="Image" src="https://github.com/user-attachments/assets/d65bd952-47f9-4f8a-b8f9-7e950af56f9f" />
+The Home tab displays the current watcher service status and provides controls to start, stop, or restart it.
 
+## Config
+
+<img src="assets/config.png" alt="Config" width="750" />
+
+The Config tab manages which directories the watcher monitors. Each path entry has an action (`watch` or `ignore`), mode (`recursive` or `children`), and validation status.
+
+## Logs
+
+<img src="assets/logs.png" alt="Logs" width="750" />
+
+The Logs tab lets you browse past watcher logs and follow new entries in real time via macOS unified logging.
+
+## Browser
+
+<img src="assets/browser.png" alt="Browser" width="750" />
+
+The Browser tab lets you inspect files and directories for their Unicode normalization form and convert them directly. The watcher only picks up newly created or modified files, so use this tab to convert any existing NFD names.
 
 ## Installation
 
-You can install nfd2nfc via Homebrew using our tap. This installation provides two executables: nfd2nfc and nfd2nfc-watcher.
+Requires [Homebrew](https://brew.sh).
 
-### Steps
-
-1.	**Add the Homebrew Tap:**
-``` bash 
-brew tap elgar328/nfd2nfc
+```bash
+brew install elgar328/nfd2nfc/nfd2nfc
 ```
 
-2.	**Install nfd2nfc:**
-``` bash
-brew install nfd2nfc
+Then run it:
+
+```bash
+nfd2nfc
 ```
 
-3.	**Start the Service:**
+On first launch, the watcher service is automatically registered via `brew services`. After that, you can start and stop it from the app.
 
-After installation, register and start the background service by running:
-``` bash
-brew services start nfd2nfc
+## Upgrading from v1
+
+```bash
+brew upgrade nfd2nfc
 ```
 
-Alternatively, if you don’t need a background service, you can run the watcher manually:
-``` bash
-nfd2nfc-watcher
+v2 replaces the previous CLI with an interactive TUI. The config format (`~/.config/nfd2nfc/config.toml`) has changed as well, so you will need to re-add your watch paths in the Config tab after upgrading.
+
+## Testing
+
+`tools/generate_test_data.py` creates a deterministic directory tree (10,000 items by default) in `tools/test_data/` with NFD-affected names in Korean, French, Japanese, Vietnamese, and more. Use it to verify conversion behavior.
+
+```bash
+python tools/generate_test_data.py
 ```
 
-4.	**Managing the Watcher Service:**
+## Uninstallation
 
-By default, no paths are set to be monitored. To enable automatic filename conversion, you must add directories to the watch list. For example, to have the watcher automatically process your Desktop folder and all its subdirectories, run:
-``` bash
-nfd2nfc watch add ~/Desktop -r
+```bash
+brew uninstall nfd2nfc
 ```
 
-After adding a watch path, you can verify that it was successfully added by running the command below. This command displays all paths currently being monitored, so you can quickly check that your Desktop folder is included.
-``` bash
-nfd2nfc watch list
-```
+## License
 
-For more details, see the help documentation:
-``` bash
-nfd2nfc -–help
-nfd2nfc watch -–help
-```
+MIT
