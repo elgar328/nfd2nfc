@@ -88,14 +88,6 @@ brew upgrade nfd2nfc
 
 v2 replaces the previous CLI with an interactive TUI. The config format (`~/.config/nfd2nfc/config.toml`) has changed as well, so you will need to re-add your watch paths in the Config tab after upgrading.
 
-## Testing
-
-`tools/generate_test_data.py` creates a deterministic directory tree (10,000 items by default) in `tools/test_data/` with NFD-affected names in Korean, French, Japanese, Vietnamese, and more. Use it to verify conversion behavior.
-
-```bash
-python tools/generate_test_data.py
-```
-
 ## Uninstallation
 
 ```bash

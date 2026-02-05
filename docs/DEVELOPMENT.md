@@ -55,6 +55,14 @@ rm ~/Library/LaunchAgents/homebrew.mxcl.nfd2nfc.plist
 brew install elgar328/nfd2nfc/nfd2nfc
 ```
 
+## 테스트 데이터
+
+`tools/generate_test_data.py`를 실행하면 한국어, 프랑스어, 일본어, 베트남어 등의 NFD 파일명으로 구성된 테스트 디렉토리(기본 10,000개 항목)가 `tools/test_data/`에 생성됩니다. 매번 동일한 결과가 생성되므로 변환 동작을 검증하는 데 활용할 수 있습니다.
+
+```bash
+python tools/generate_test_data.py
+```
+
 ## Release Procedure
 
 main 브랜치에서 직접 개발하며, 릴리스 시에만 버전 확정.

@@ -88,14 +88,6 @@ brew upgrade nfd2nfc
 
 v2는 기존 CLI 대신 TUI를 사용합니다. 설정 파일 형식(`~/.config/nfd2nfc/config.toml`)도 바뀌었으니, 업그레이드 후 Config 탭에서 감시 경로를 다시 설정해 주세요.
 
-## 테스트
-
-`tools/generate_test_data.py`를 실행하면 한국어, 프랑스어, 일본어, 베트남어 등의 NFD 파일명으로 구성된 테스트 디렉토리(기본 10,000개 항목)가 `tools/test_data/`에 생성됩니다. 매번 동일한 결과가 생성되므로 변환 동작을 검증하는 데 활용할 수 있습니다.
-
-```bash
-python tools/generate_test_data.py
-```
-
 ## 삭제
 
 ```bash
