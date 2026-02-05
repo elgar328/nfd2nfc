@@ -4,6 +4,8 @@
 [![CI](https://github.com/elgar328/nfd2nfc/actions/workflows/ci.yml/badge.svg)](https://github.com/elgar328/nfd2nfc/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/elgar328/nfd2nfc)](https://github.com/elgar328/nfd2nfc#license)
 
+[![한국어](https://img.shields.io/badge/lang-한국어_↗-blue)](docs/README.ko.md)
+
 A macOS tool that watches directories and converts NFD filenames to NFC in real time, ensuring cross-platform compatibility.
 
 ## What is NFD/NFC?
