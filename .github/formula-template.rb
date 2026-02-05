@@ -1,7 +1,7 @@
 class Nfd2nfc < Formula
   desc "Convert filesystem entry names from NFD to NFC for cross-platform compatibility"
   homepage "https://github.com/elgar328/nfd2nfc"
-  url "https://github.com/elgar328/nfd2nfc/releases/download/PLACEHOLDER_VERSION/nfd2nfc-PLACEHOLDER_VERSION-universal-apple-darwin.tar.gz"
+  url "https://github.com/elgar328/nfd2nfc/releases/download/PLACEHOLDER_TAG/nfd2nfc-PLACEHOLDER_VERSION-universal-apple-darwin.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "MIT"
 

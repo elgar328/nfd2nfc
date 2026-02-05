@@ -103,7 +103,8 @@ jobs:
           cd tap
 
           cp "$GITHUB_WORKSPACE/.github/formula-template.rb" Formula/nfd2nfc.rb
-          sed -i '' "s|PLACEHOLDER_VERSION|v${VERSION}|g" Formula/nfd2nfc.rb
+          sed -i '' "s|PLACEHOLDER_TAG|v${VERSION}|g" Formula/nfd2nfc.rb
+          sed -i '' "s|PLACEHOLDER_VERSION|${VERSION}|g" Formula/nfd2nfc.rb
           sed -i '' "s|PLACEHOLDER_SHA256|${SHA256}|g" Formula/nfd2nfc.rb
 
           git config user.name "github-actions[bot]"
