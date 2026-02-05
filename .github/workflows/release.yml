@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-13
+          - os: macos-15-intel
             target: x86_64-apple-darwin
           - os: macos-15
             target: aarch64-apple-darwin
@@ -102,34 +102,7 @@ jobs:
           git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/elgar328/homebrew-nfd2nfc.git" tap
           cd tap
 
-          cat > Formula/nfd2nfc.rb << 'FORMULA_EOF'
-          class Nfd2nfc < Formula
-            desc "Convert filesystem entry names from NFD to NFC for cross-platform compatibility"
-            homepage "https://github.com/elgar328/nfd2nfc"
-            url "https://github.com/elgar328/nfd2nfc/releases/download/PLACEHOLDER_VERSION/nfd2nfc-PLACEHOLDER_VERSION-universal-apple-darwin.tar.gz"
-            sha256 "PLACEHOLDER_SHA256"
-            license "MIT"
-
-            depends_on :macos
-
-            def install
-              bin.install "nfd2nfc"
-              bin.install "nfd2nfc-watcher"
-            end
-
-            service do
-              run [opt_bin/"nfd2nfc-watcher"]
-              keep_alive crashed: true
-              run_type :immediate
-              working_dir HOMEBREW_PREFIX
-            end
-
-            test do
-              assert_match "nfd2nfc", shell_output("#{bin}/nfd2nfc --version")
-            end
-          end
-          FORMULA_EOF
-
+          cp "$GITHUB_WORKSPACE/.github/formula-template.rb" Formula/nfd2nfc.rb
           sed -i '' "s|PLACEHOLDER_VERSION|v${VERSION}|g" Formula/nfd2nfc.rb
           sed -i '' "s|PLACEHOLDER_SHA256|${SHA256}|g" Formula/nfd2nfc.rb
 
