@@ -40,7 +40,9 @@ EOF
 cargo run --bin nfd2nfc
 ```
 
-코드 수정 후: `cargo build --release` → TUI에서 watcher restart
+코드 수정 후:
+- **TUI만 수정**: `cargo run --bin nfd2nfc`로 바로 확인
+- **watcher 수정**: `cargo build --release` 후 TUI에서 watcher restart (plist가 release 바이너리를 가리키므로 rebuild 필수)
 
 ### 개발 환경 정리 (dev → brew)
 
