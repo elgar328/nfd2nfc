@@ -1,15 +1,105 @@
-use crate::config::Config;
 use crate::handler;
-use log::{error, info};
-use nfd2nfc_common::constants::WATCHER_LIVE_MESSAGE;
+use log::{debug, error, info};
+use nfd2nfc_core::config::{ActiveEntry, PathAction, PathMode};
+use nfd2nfc_core::constants::{HEARTBEAT_INTERVAL, HEARTBEAT_PATH};
 use notify::{Error as NotifyError, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::Semaphore;
 use unicode_normalization::is_nfc;
 
-pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
-    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+/// Maximum number of concurrent file event handler tasks.
+const MAX_CONCURRENT_TASKS: usize = 200;
+
+/// Debounce window for deduplicating events on the same path.
+const DEBOUNCE_DURATION: Duration = Duration::from_millis(50);
+
+/// Determine the effective action for an event path based on active entries.
+/// Returns the action of the most specific (longest canonical path) matching active entry.
+fn effective_action(event_path: &Path, active_entries: &[ActiveEntry]) -> Option<PathAction> {
+    active_entries
+        .iter()
+        .filter(|e| match e.mode {
+            PathMode::Recursive => event_path.starts_with(&e.canonical),
+            PathMode::Children => event_path.parent() == Some(&*e.canonical),
+        })
+        .max_by_key(|e| e.canonical.as_os_str().len())
+        .map(|e| e.action)
+}
+
+/// Register watch paths with the notify watcher. Returns (recursive_count, children_count, ignore_count).
+fn register_watch_paths(
+    watcher: &mut RecommendedWatcher,
+    entries: &[ActiveEntry],
+) -> (usize, usize, usize) {
+    let mut recursive_count = 0usize;
+    let mut children_count = 0usize;
+    let mut ignore_count = 0usize;
+
+    for entry in entries {
+        match entry.action {
+            PathAction::Watch => {
+                let notify_mode = match entry.mode {
+                    PathMode::Recursive => RecursiveMode::Recursive,
+                    PathMode::Children => RecursiveMode::NonRecursive,
+                };
+                match watcher.watch(&entry.canonical, notify_mode) {
+                    Ok(()) => {
+                        debug!("Watching path: {}", entry.canonical.display());
+                        match entry.mode {
+                            PathMode::Recursive => recursive_count += 1,
+                            PathMode::Children => children_count += 1,
+                        }
+                    }
+                    Err(e) => error!(
+                        "Failed to watch path: {} - {}",
+                        entry.canonical.display(),
+                        e
+                    ),
+                }
+            }
+            PathAction::Ignore => {
+                ignore_count += 1;
+            }
+        }
+    }
+
+    (recursive_count, children_count, ignore_count)
+}
+
+/// Log a summary of the registered watch paths.
+fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count: usize) {
+    if recursive_count == 0 && children_count == 0 {
+        info!("nfd2nfc-watcher started. No paths configured.");
+    } else if ignore_count == 0 {
+        info!(
+            "nfd2nfc-watcher started. Monitoring {} recursive, {} children paths.",
+            recursive_count, children_count
+        );
+    } else {
+        info!(
+            "nfd2nfc-watcher started. Monitoring {} recursive, {} children paths ({} ignored).",
+            recursive_count, children_count, ignore_count
+        );
+    }
+}
+
+/// Spawn a background task that writes to the heartbeat file at a regular interval.
+fn spawn_heartbeat_task() {
+    spawn(async {
+        let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
+        loop {
+            interval.tick().await;
+            let _ = std::fs::write(&*HEARTBEAT_PATH, "");
+        }
+    });
+}
+
+pub async fn start_watcher(rt_handle: tokio::runtime::Handle, entries: Vec<ActiveEntry>) {
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1024);
 
     let mut watcher = match RecommendedWatcher::new(
         move |res: Result<Event, NotifyError>| {
@@ -24,7 +114,7 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
         notify::Config::default(),
     ) {
         Ok(w) => {
-            info!(" + File system event watcher initialized.");
+            debug!("File system event watcher initialized.");
             w
         }
         Err(e) => {
@@ -36,63 +126,57 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, config: Config) {
         }
     };
 
-    // Register recursive watch paths.
-    for path in &config.recursive_watch_paths {
-        match watcher.watch(&path, RecursiveMode::Recursive) {
-            Ok(()) => info!(" + Watching recursive path: {}", path.display()),
-            Err(e) => error!("Failed to watch recursive path: {} - {}", path.display(), e),
-        }
-    }
-
-    // Register non-recursive watch paths.
-    for path in &config.non_recursive_watch_paths {
-        match watcher.watch(&path, RecursiveMode::NonRecursive) {
-            Ok(()) => info!(" + Watching non-recursive path: {}", path.display()),
-            Err(e) => error!(
-                "Failed to watch non-recursive path: {} - {}",
-                path.display(),
-                e
-            ),
-        }
-    }
-
-    info!("{}", WATCHER_LIVE_MESSAGE);
+    let (recursive_count, children_count, ignore_count) =
+        register_watch_paths(&mut watcher, &entries);
+    log_watch_summary(recursive_count, children_count, ignore_count);
+    spawn_heartbeat_task();
 
     // Limit the number of concurrently executing tasks using a semaphore.
-    let semaphore = Arc::new(Semaphore::new(200));
+    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_TASKS));
 
-    // Process events in an asynchronous loop.
-    while let Some(res) = rx.recv().await {
-        match res {
-            Ok(event) => {
-                let event_path = match event.paths.get(0) {
-                    Some(path) => path,
-                    None => continue,
-                };
+    // Process events with debouncing to deduplicate rapid events on the same path.
+    let mut pending: HashMap<PathBuf, Event> = HashMap::new();
+    let mut debounce_timer = tokio::time::interval(DEBOUNCE_DURATION);
 
-                // Skip events for paths in the exclusion list.
-                if config
-                    .recursive_ignore_paths
-                    .iter()
-                    .any(|ignore| event_path.starts_with(ignore))
-                {
-                    continue;
+    loop {
+        tokio::select! {
+            Some(res) = rx.recv() => {
+                match res {
+                    Ok(event) => {
+                        let event_path = match event.paths.first() {
+                            Some(path) => path,
+                            None => continue,
+                        };
+
+                        // Use effective_action to determine if this event should be processed.
+                        match effective_action(event_path, &entries) {
+                            Some(PathAction::Watch) => {}
+                            _ => continue,
+                        }
+
+                        let file_name = match event_path.file_name().and_then(|s| s.to_str()) {
+                            Some(name) => name,
+                            None => continue,
+                        };
+                        if is_nfc(file_name) {
+                            continue;
+                        }
+
+                        // Same path overwrites previous event (deduplication).
+                        pending.insert(event_path.clone(), event);
+                    }
+                    Err(e) => error!("FS watcher error: {}", e),
                 }
-
-                let file_name = match event_path.file_name().and_then(|s| s.to_str()) {
-                    Some(name) => name,
-                    None => continue,
-                };
-                if is_nfc(file_name) {
-                    continue;
-                }
-                let sem_clone = semaphore.clone();
-                spawn(async move {
-                    let _permit = sem_clone.acquire_owned().await.unwrap();
-                    handler::handle_event(event).await;
-                });
             }
-            Err(e) => error!("FS watcher error: {}", e),
+            _ = debounce_timer.tick() => {
+                for (_path, event) in pending.drain() {
+                    let sem_clone = semaphore.clone();
+                    spawn(async move {
+                        let _permit = sem_clone.acquire_owned().await.unwrap();
+                        handler::handle_event(event).await;
+                    });
+                }
+            }
         }
     }
 }

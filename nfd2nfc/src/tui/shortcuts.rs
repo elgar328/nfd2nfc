@@ -1,0 +1,107 @@
+use crossterm::event::KeyCode;
+use ratatui::{
+    layout::{Alignment, Rect},
+    text::{Line, Span},
+    widgets::{Block, Borders},
+    Frame,
+};
+
+use crate::tui::app::events::MouseState;
+use crate::tui::styles::{border_style, dimmed_style, key_style, label_style};
+
+/// Builder for rendering a block with a bottom shortcut bar.
+pub struct ShortcutBlock<'a> {
+    title: Line<'a>,
+    items: Vec<(Vec<Span<'a>>, Option<KeyCode>)>,
+}
+
+impl<'a> ShortcutBlock<'a> {
+    pub fn new(title: Line<'a>) -> Self {
+        Self {
+            title,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn items(mut self, items: Vec<(Vec<Span<'a>>, Option<KeyCode>)>) -> Self {
+        self.items = items;
+        self
+    }
+
+    /// Render the block with shortcuts and return the inner area for content.
+    pub fn render(self, f: &mut Frame, area: Rect, mouse: &mut MouseState) -> Rect {
+        let bottom_y = area.y + area.height - 1;
+        let base_x = area.x + 1;
+
+        let shortcut_spans = mouse.add_shortcuts(self.items, base_x, bottom_y);
+        let shortcuts = Line::from(shortcut_spans);
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(border_style())
+            .title(self.title)
+            .title_alignment(Alignment::Center)
+            .title_bottom(shortcuts.left_aligned());
+
+        let inner = block.inner(area);
+        f.render_widget(block, area);
+        inner
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Shortcut item helpers
+// ─────────────────────────────────────────────────────────────
+
+/// Active shortcut: key highlighted in red, label in cyan.
+pub fn shortcut<'a>(
+    key: &'a str,
+    label: &'a str,
+    code: KeyCode,
+) -> (Vec<Span<'a>>, Option<KeyCode>) {
+    (
+        vec![
+            Span::styled(key, key_style()),
+            Span::styled(label, label_style()),
+        ],
+        Some(code),
+    )
+}
+
+/// Dimmed shortcut: both key and label rendered in dimmed style, no click area.
+pub fn shortcut_dimmed<'a>(key: &'a str, label: &'a str) -> (Vec<Span<'a>>, Option<KeyCode>) {
+    (
+        vec![
+            Span::styled(key, dimmed_style()),
+            Span::styled(label, dimmed_style()),
+        ],
+        None,
+    )
+}
+
+/// Bracketed shortcut: `[key]label` with key highlighted, label in cyan.
+pub fn shortcut_bracketed<'b>(
+    key: &'b str,
+    label: &'b str,
+    code: KeyCode,
+) -> (Vec<Span<'b>>, Option<KeyCode>) {
+    (
+        vec![
+            Span::styled("[", label_style()),
+            Span::styled(key, key_style()),
+            Span::styled("]", label_style()),
+            Span::styled(label, label_style()),
+        ],
+        Some(code),
+    )
+}
+
+/// Single space separator.
+pub fn space() -> (Vec<Span<'static>>, Option<KeyCode>) {
+    (vec![Span::raw(" ")], None)
+}
+
+/// Double space gap.
+pub fn gap() -> (Vec<Span<'static>>, Option<KeyCode>) {
+    (vec![Span::raw("  ")], None)
+}

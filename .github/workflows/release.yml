@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            target: x86_64-apple-darwin
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload nfd2nfc binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfd2nfc-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/nfd2nfc
+
+      - name: Upload nfd2nfc-watcher binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfd2nfc-watcher-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/nfd2nfc-watcher
+
+  release:
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create universal binaries
+        run: |
+          mkdir -p universal
+          lipo -create \
+            artifacts/nfd2nfc-x86_64-apple-darwin/nfd2nfc \
+            artifacts/nfd2nfc-aarch64-apple-darwin/nfd2nfc \
+            -output universal/nfd2nfc
+          lipo -create \
+            artifacts/nfd2nfc-watcher-x86_64-apple-darwin/nfd2nfc-watcher \
+            artifacts/nfd2nfc-watcher-aarch64-apple-darwin/nfd2nfc-watcher \
+            -output universal/nfd2nfc-watcher
+          chmod +x universal/nfd2nfc universal/nfd2nfc-watcher
+
+      - name: Verify universal binaries
+        run: |
+          file universal/nfd2nfc
+          file universal/nfd2nfc-watcher
+          lipo -info universal/nfd2nfc
+          lipo -info universal/nfd2nfc-watcher
+
+      - name: Package tarball
+        id: package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCHIVE="nfd2nfc-${VERSION}-universal-apple-darwin.tar.gz"
+          tar -czf "$ARCHIVE" -C universal nfd2nfc nfd2nfc-watcher
+          SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "${{ steps.package.outputs.archive }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew tap
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.package.outputs.version }}"
+          SHA256="${{ steps.package.outputs.sha256 }}"
+
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/elgar328/homebrew-nfd2nfc.git" tap
+          cd tap
+
+          cat > Formula/nfd2nfc.rb << 'FORMULA_EOF'
+          class Nfd2nfc < Formula
+            desc "Convert filesystem entry names from NFD to NFC for cross-platform compatibility"
+            homepage "https://github.com/elgar328/nfd2nfc"
+            url "https://github.com/elgar328/nfd2nfc/releases/download/PLACEHOLDER_VERSION/nfd2nfc-PLACEHOLDER_VERSION-universal-apple-darwin.tar.gz"
+            sha256 "PLACEHOLDER_SHA256"
+            license "MIT"
+
+            depends_on :macos
+
+            def install
+              bin.install "nfd2nfc"
+              bin.install "nfd2nfc-watcher"
+            end
+
+            service do
+              run [opt_bin/"nfd2nfc-watcher"]
+              keep_alive crashed: true
+              run_type :immediate
+              working_dir HOMEBREW_PREFIX
+            end
+
+            test do
+              assert_match "nfd2nfc", shell_output("#{bin}/nfd2nfc --version")
+            end
+          end
+          FORMULA_EOF
+
+          sed -i '' "s|PLACEHOLDER_VERSION|v${VERSION}|g" Formula/nfd2nfc.rb
+          sed -i '' "s|PLACEHOLDER_SHA256|${SHA256}|g" Formula/nfd2nfc.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/nfd2nfc.rb
+          git commit -m "Update nfd2nfc to ${VERSION}"
+          git push
