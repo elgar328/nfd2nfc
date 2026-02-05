@@ -70,6 +70,14 @@ nfd2nfc
 
 On first launch, the watcher service is automatically registered via `brew services`. After that, you can start and stop it from the app.
 
+### Permissions
+
+If macOS repeatedly prompts for folder access when the watcher converts files, grant **Full Disk Access** to the watcher binary:
+
+1. Run `which nfd2nfc-watcher` to find the binary path
+2. Open **System Settings → Privacy & Security → Full Disk Access**
+3. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
+
 ## Upgrading from v1
 
 ```bash
