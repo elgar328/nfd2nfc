@@ -82,6 +82,8 @@ Watcher가 파일을 변환할 때 macOS가 폴더 접근 권한을 반복적으
 
 ## v1 사용자 안내
 
+아래 명령어로 업그레이드하세요:
+
 ```bash
 brew upgrade nfd2nfc
 ```
