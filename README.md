@@ -48,7 +48,7 @@ The Config tab manages which directories the watcher monitors. Each path entry h
 
 <img src="assets/logs.png" alt="Logs" width="750" />
 
-The Logs tab lets you browse past watcher logs and follow new entries in real time via macOS unified logging.
+The Logs tab lets you browse past watcher logs and follow new entries in real time. Logs are stored in macOS system logs, and retention is managed by the OS.
 
 ## Browser
 
@@ -86,7 +86,7 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 brew upgrade nfd2nfc
 ```
 
-v2 replaces the previous CLI with an interactive TUI. The config format (`~/.config/nfd2nfc/config.toml`) has changed as well, so you will need to re-add your watch paths in the Config tab after upgrading.
+v2 replaces the previous CLI with a more user-friendly TUI. The config format (`~/.config/nfd2nfc/config.toml`) has changed as well, so you will need to re-add your watch paths in the Config tab after upgrading.
 
 ## Uninstallation
 
@@ -96,4 +96,4 @@ brew uninstall nfd2nfc
 
 ## License
 
-MIT
+[MIT](LICENSE)
