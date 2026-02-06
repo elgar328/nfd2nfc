@@ -72,16 +72,11 @@ fn register_watch_paths(
 
 /// Log a summary of the registered watch paths.
 fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count: usize) {
-    if recursive_count == 0 && children_count == 0 {
+    if recursive_count == 0 && children_count == 0 && ignore_count == 0 {
         info!("nfd2nfc-watcher started. No paths configured.");
-    } else if ignore_count == 0 {
-        info!(
-            "nfd2nfc-watcher started. Monitoring {} recursive, {} children paths.",
-            recursive_count, children_count
-        );
     } else {
         info!(
-            "nfd2nfc-watcher started. Monitoring {} recursive, {} children paths ({} ignored).",
+            "nfd2nfc-watcher started. Paths: {} recursive, {} children, {} ignored.",
             recursive_count, children_count, ignore_count
         );
     }
