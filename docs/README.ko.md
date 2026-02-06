@@ -10,7 +10,7 @@ NFD 파일명을 실시간으로 감지해 NFC로 변환하는 macOS 도구입�
 
 ## NFD/NFC란?
 
-유니코드에는 한글, 악센트 문자(é, ü, ñ), 일본어(が, ぱ) 등을 표현하는 두 가지 정규화 방식이 있습니다:
+유니코드에는 한글, 악센트 문자(é, ü, ñ), 일본어(が, ぱ) 같은 조합 문자를 표현하는 두 가지 정규화 방식이 있습니다:
 
 - **NFC** (조합형): 하나의 코드포인트 — `가` = `U+AC00`
 - **NFD** (분해형): 기본 문자 + 결합 문자 — `가` = `U+1100 U+1161`
@@ -48,7 +48,7 @@ Config 탭에서 감시할 디렉토리를 관리합니다. 각 경로의 액션
 
 <img src="../assets/logs.png" alt="Logs" width="750" />
 
-Logs 탭에서 macOS unified logging을 통해 과거 watcher 로그를 조회하거나 실시간으로 확인할 수 있습니다.
+Logs 탭에서 과거 watcher 로그를 조회하거나 실시간으로 확인할 수 있습니다. 로그는 macOS 시스템 로그에 기록되며, 보관 기간은 OS가 관리합니다.
 
 ## Browser
 
@@ -56,9 +56,9 @@ Logs 탭에서 macOS unified logging을 통해 과거 watcher 로그를 조회�
 
 Browser 탭에서 파일과 디렉토리의 정규화 형식(NFD/NFC)을 확인하고 직접 변환할 수 있습니다. Watcher는 새로 생성/수정된 파일만 감지하므로, 기존 NFD 파일명은 이 탭에서 변환하세요.
 
-## 설치
+## 설치 방법
 
-[Homebrew](https://brew.sh)가 설치되어 있어야 합니다.
+[Homebrew](https://brew.sh)를 통해 설치할 수 있습니다:
 
 ```bash
 brew install elgar328/nfd2nfc/nfd2nfc
@@ -80,20 +80,20 @@ Watcher가 파일을 변환할 때 macOS가 폴더 접근 권한을 반복적으
 2. **시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한** 열기
 3. `+` 클릭 → `Cmd+Shift+G`를 눌러 1단계의 경로를 입력하고 추가
 
-## v1에서 업그레이드
+## v1 사용자 안내
 
 ```bash
 brew upgrade nfd2nfc
 ```
 
-v2는 기존 CLI 대신 TUI를 사용합니다. 설정 파일 형식(`~/.config/nfd2nfc/config.toml`)도 바뀌었으니, 업그레이드 후 Config 탭에서 감시 경로를 다시 설정해 주세요.
+v2에서는 기존 CLI 대신 더 편리한 TUI를 도입했습니다. 설정 파일 형식(`~/.config/nfd2nfc/config.toml`)도 변경되었으니, 업그레이드 후 Config 탭에서 감시 경로를 다시 설정해 주세요.
 
-## 삭제
+## 제거 방법
 
 ```bash
 brew uninstall nfd2nfc
 ```
 
-## 라이선스
+## License
 
-MIT
+[MIT](../LICENSE)
