@@ -18,6 +18,28 @@ pub enum PendingWatcherOperation {
     Restarting,
 }
 
+impl PendingWatcherOperation {
+    fn success_state(&self) -> bool {
+        matches!(self, Self::Starting | Self::Restarting)
+    }
+
+    fn past_tense(&self) -> &'static str {
+        match self {
+            Self::Starting => "started",
+            Self::Stopping => "stopped",
+            Self::Restarting => "restarted",
+        }
+    }
+
+    fn verb(&self) -> &'static str {
+        match self {
+            Self::Starting => "start",
+            Self::Stopping => "stop",
+            Self::Restarting => "restart",
+        }
+    }
+}
+
 pub struct AsyncOperation {
     pub kind: PendingWatcherOperation,
     pub result_rx: Receiver<Result<(), String>>,
@@ -81,27 +103,13 @@ impl App {
         // Check for async operation completion
         if let Some(ref op) = self.async_operation {
             if let Ok(result) = op.result_rx.try_recv() {
-                match (&op.kind, result) {
-                    (PendingWatcherOperation::Starting, Ok(())) => {
-                        self.watcher_running = true;
-                        self.show_toast("Watcher started".to_string(), false);
+                match result {
+                    Ok(()) => {
+                        self.watcher_running = op.kind.success_state();
+                        self.show_toast(format!("Watcher {}", op.kind.past_tense()), false);
                     }
-                    (PendingWatcherOperation::Starting, Err(e)) => {
-                        self.show_toast(format!("Failed to start: {}", e), true);
-                    }
-                    (PendingWatcherOperation::Stopping, Ok(())) => {
-                        self.watcher_running = false;
-                        self.show_toast("Watcher stopped".to_string(), false);
-                    }
-                    (PendingWatcherOperation::Stopping, Err(e)) => {
-                        self.show_toast(format!("Failed to stop: {}", e), true);
-                    }
-                    (PendingWatcherOperation::Restarting, Ok(())) => {
-                        self.watcher_running = true;
-                        self.show_toast("Watcher restarted".to_string(), false);
-                    }
-                    (PendingWatcherOperation::Restarting, Err(e)) => {
-                        self.show_toast(format!("Failed to restart: {}", e), true);
+                    Err(e) => {
+                        self.show_toast(format!("Failed to {}: {}", op.kind.verb(), e), true);
                     }
                 }
                 self.async_operation = None;
@@ -153,22 +161,12 @@ impl App {
     }
 
     pub fn next_tab(&mut self) {
-        self.current_tab = match self.current_tab {
-            Tab::Home => Tab::Config,
-            Tab::Config => Tab::Logs,
-            Tab::Logs => Tab::Browser,
-            Tab::Browser => Tab::Home,
-        };
+        self.current_tab = self.current_tab.next();
         self.force_redraw = true;
     }
 
     pub fn previous_tab(&mut self) {
-        self.current_tab = match self.current_tab {
-            Tab::Home => Tab::Browser,
-            Tab::Config => Tab::Home,
-            Tab::Logs => Tab::Config,
-            Tab::Browser => Tab::Logs,
-        };
+        self.current_tab = self.current_tab.previous();
         self.force_redraw = true;
     }
 

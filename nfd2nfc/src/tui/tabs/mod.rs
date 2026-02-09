@@ -58,4 +58,22 @@ impl Tab {
             _ => None,
         }
     }
+
+    pub fn next(self) -> Self {
+        match self {
+            Tab::Home => Tab::Config,
+            Tab::Config => Tab::Logs,
+            Tab::Logs => Tab::Browser,
+            Tab::Browser => Tab::Home,
+        }
+    }
+
+    pub fn previous(self) -> Self {
+        match self {
+            Tab::Home => Tab::Browser,
+            Tab::Config => Tab::Home,
+            Tab::Logs => Tab::Config,
+            Tab::Browser => Tab::Logs,
+        }
+    }
 }

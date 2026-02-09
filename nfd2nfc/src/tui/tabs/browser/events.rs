@@ -103,37 +103,31 @@ pub fn handle_scroll(state: &mut BrowserState, direction: ScrollDirection) -> Op
     None
 }
 
-pub fn handle_mouse_click(state: &mut BrowserState, _x: u16, y: u16) -> Option<Action> {
+fn clicked_entry_index(state: &BrowserState, y: u16) -> Option<usize> {
     let (list_start_y, list_end_y) = browser_list_y_range(state.path_height);
-
     if y >= list_start_y && y < list_end_y {
-        let visible_index = (y - list_start_y) as usize;
-        let scroll_offset = state.dir_browser.render_offset;
-        let clicked_index = visible_index + scroll_offset;
+        let idx = (y - list_start_y) as usize + state.dir_browser.render_offset;
+        (idx < state.dir_browser.entries.len()).then_some(idx)
+    } else {
+        None
+    }
+}
 
-        if clicked_index < state.dir_browser.entries.len() {
-            state.dir_browser.list_state.select(Some(clicked_index));
-        }
+pub fn handle_mouse_click(state: &mut BrowserState, _x: u16, y: u16) -> Option<Action> {
+    if let Some(idx) = clicked_entry_index(state, y) {
+        state.dir_browser.list_state.select(Some(idx));
     }
     None
 }
 
 pub fn handle_double_click(state: &mut BrowserState, _x: u16, y: u16) -> Option<Action> {
-    let (list_start_y, list_end_y) = browser_list_y_range(state.path_height);
-
-    if y >= list_start_y && y < list_end_y {
-        let visible_index = (y - list_start_y) as usize;
-        let scroll_offset = state.dir_browser.render_offset;
-        let clicked_index = visible_index + scroll_offset;
-
-        if clicked_index < state.dir_browser.entries.len() {
-            let entry = &state.dir_browser.entries[clicked_index];
-            if entry.is_parent {
-                state.dir_browser.go_parent();
-            } else if entry.is_dir {
-                let path = entry.path.clone();
-                state.dir_browser.enter_directory(&path);
-            }
+    if let Some(idx) = clicked_entry_index(state, y) {
+        let entry = &state.dir_browser.entries[idx];
+        if entry.is_parent {
+            state.dir_browser.go_parent();
+        } else if entry.is_dir {
+            let path = entry.path.clone();
+            state.dir_browser.enter_directory(&path);
         }
     }
     None

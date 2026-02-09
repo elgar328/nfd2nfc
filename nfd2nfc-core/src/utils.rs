@@ -13,8 +13,8 @@ pub fn expand_tilde(path: &str) -> PathBuf {
 
 pub fn abbreviate_home(path_str: &str) -> String {
     let home = HOME_DIR.to_string_lossy();
-    if path_str.starts_with(home.as_ref()) {
-        format!("~{}", &path_str[home.len()..])
+    if let Some(rest) = path_str.strip_prefix(home.as_ref()) {
+        format!("~{rest}")
     } else {
         path_str.to_string()
     }

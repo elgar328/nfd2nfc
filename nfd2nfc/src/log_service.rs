@@ -27,15 +27,13 @@ fn extract_json_field(line: &str, field: &str) -> Option<String> {
     // Then try pretty json format (with spaces): "field" : "value"
     let pretty_prefix = format!("\"{}\" : \"", field);
 
-    let (prefix, start) = if let Some(idx) = line.find(&ndjson_prefix) {
-        (ndjson_prefix.len(), idx + ndjson_prefix.len())
+    let start = if let Some(idx) = line.find(&ndjson_prefix) {
+        idx + ndjson_prefix.len()
     } else if let Some(idx) = line.find(&pretty_prefix) {
-        (pretty_prefix.len(), idx + pretty_prefix.len())
+        idx + pretty_prefix.len()
     } else {
         return None;
     };
-
-    let _ = prefix; // suppress unused warning
 
     // Find the closing quote, handling escaped characters
     let rest = &line[start..];
