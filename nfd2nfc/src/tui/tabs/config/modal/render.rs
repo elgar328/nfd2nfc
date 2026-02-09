@@ -120,10 +120,16 @@ pub fn render_add_modal(
         .filter(|e| e.is_dir)
         .map(|entry| {
             if entry.is_parent {
-                ListItem::new("  ../").style(Style::default().fg(Color::Yellow))
+                ListItem::new(Line::from(vec![
+                    Span::styled(" 📂", Style::default().fg(Color::Yellow)),
+                    Span::styled("..", Style::default().fg(Color::Yellow)),
+                ]))
             } else {
                 let style = Style::default().fg(Color::White);
-                ListItem::new(format!("  {}/", entry.name)).style(style)
+                ListItem::new(Line::from(vec![
+                    Span::styled(" 📁", style),
+                    Span::styled(&entry.name, style),
+                ]))
             }
         })
         .collect();
