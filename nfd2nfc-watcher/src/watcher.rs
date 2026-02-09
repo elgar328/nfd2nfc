@@ -84,11 +84,18 @@ fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count
 
 /// Spawn a background task that writes to the heartbeat file at a regular interval.
 fn spawn_heartbeat_task() {
-    spawn(async {
+    let heartbeat_dir = HEARTBEAT_PATH.parent().map(Path::to_path_buf);
+    spawn(async move {
         let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
         loop {
             interval.tick().await;
-            let _ = std::fs::write(&*HEARTBEAT_PATH, "");
+            if let Err(e) = std::fs::write(&*HEARTBEAT_PATH, "") {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    if let Some(dir) = &heartbeat_dir {
+                        let _ = std::fs::create_dir_all(dir);
+                    }
+                }
+            }
         }
     });
 }
