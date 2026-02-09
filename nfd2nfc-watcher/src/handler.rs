@@ -43,10 +43,14 @@ pub async fn handle_event(event: Event) {
             NormalizationTarget::NFC.as_str(),
             abbreviate_home_path(&new_path)
         ),
-        Err(e) => error!(
-            "Failed to convert {} to NFC: {}",
-            abbreviate_home_path(&new_path),
-            e
-        ),
+        Err(e) => {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                error!(
+                    "Failed to convert {} to NFC: {}",
+                    abbreviate_home_path(&new_path),
+                    e
+                );
+            }
+        }
     }
 }
