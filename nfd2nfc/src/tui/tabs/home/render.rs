@@ -66,7 +66,7 @@ pub fn render(
 
     let available_update = state.available_update.as_deref();
     let has_update = available_update.is_some();
-    let content_height: u16 = if has_update { 17 } else { 15 };
+    let content_height: u16 = if has_update { 16 } else { 15 };
 
     let centered = center_rect(inner, HOME_CONTENT_WIDTH, content_height);
 
@@ -79,7 +79,7 @@ pub fn render(
         Constraint::Length(1), // Repository URL + version
     ];
     if has_update {
-        constraints.push(Constraint::Length(2)); // Update notification
+        constraints.push(Constraint::Length(1)); // Update notification
     }
 
     let chunks = Layout::vertical(constraints).split(centered);
@@ -146,11 +146,8 @@ pub fn render(
     // Update notification
     if let Some(ver) = available_update {
         let cyan = Style::default().fg(Color::Cyan);
-        let update_text = vec![
-            Line::from(Span::styled(format!("New version available: v{ver}"), cyan)),
-            Line::from(Span::styled("Run: brew upgrade nfd2nfc", cyan)),
-        ];
-        let update = Paragraph::new(update_text).alignment(Alignment::Center);
+        let update_text = format!("v{ver} available. Run: brew upgrade nfd2nfc");
+        let update = Paragraph::new(Span::styled(update_text, cyan)).alignment(Alignment::Left);
         f.render_widget(update, chunks[6]);
     }
 }
