@@ -125,9 +125,16 @@ pub fn render(
         );
     f.render_widget(example, chunks[4]);
 
-    // Repository URL (left-aligned to match example box left edge)
-    let url = Paragraph::new("https://github.com/elgar328/nfd2nfc").style(dimmed_style());
+    // Repository URL (left) and version (right)
+    let url = Paragraph::new("github.com/elgar328/nfd2nfc")
+        .style(dimmed_style())
+        .alignment(Alignment::Left);
     f.render_widget(url, chunks[5]);
+
+    let version = Paragraph::new(format!("v{}", env!("CARGO_PKG_VERSION")))
+        .style(dimmed_style())
+        .alignment(Alignment::Right);
+    f.render_widget(version, chunks[5]);
 }
 
 fn center_rect(area: Rect, width: u16, height: u16) -> Rect {
