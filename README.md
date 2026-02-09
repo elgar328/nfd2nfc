@@ -56,6 +56,10 @@ The Logs tab lets you browse past watcher logs and follow new entries in real ti
 
 The Browser tab lets you inspect files and directories for their Unicode normalization form and convert them directly. The watcher only picks up newly created or modified files, so use this tab to convert any existing NFD names.
 
+## Limitations
+
+nfd2nfc solves the root cause of filenames breaking across operating systems — macOS storing them in NFD. However, other software (browsers, email services, cloud storage, messaging apps, archive tools, etc.) may independently convert filenames to NFD when transferring files. This is application-level behavior outside the scope of nfd2nfc.
+
 ## Installation
 
 Requires [Homebrew](https://brew.sh).
