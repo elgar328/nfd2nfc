@@ -382,8 +382,10 @@ impl Config {
     pub fn active_entries(&self) -> Vec<ActiveEntry> {
         self.paths
             .iter()
-            .filter(|e| matches!(e.status, PathStatus::Active))
             .filter_map(|e| {
+                if !matches!(e.status, PathStatus::Active) {
+                    return None;
+                }
                 e.canonical.as_ref().map(|c| ActiveEntry {
                     canonical: c.clone(),
                     action: e.action,

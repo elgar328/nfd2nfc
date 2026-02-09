@@ -64,7 +64,7 @@ pub fn render(
     let path_text = abbreviate_home(
         &state
             .dir_browser
-            .effective_selected_entry()
+            .selected_entry()
             .filter(|e| !e.is_parent)
             .map(|e| e.path.to_string_lossy().to_string())
             .unwrap_or_else(|| state.dir_browser.current_dir.to_string_lossy().to_string()),
@@ -161,7 +161,7 @@ pub fn render(
     state.dir_browser.render_offset = adjusted_state.offset();
 
     // Bottom menu logic based on SelectionKind
-    let selected_form = state.dir_browser.effective_selected_entry().map(|e| e.form);
+    let selected_form = state.dir_browser.selected_entry().map(|e| e.form);
 
     let gray = inactive_style();
     let gray_italic = inactive_italic_style();

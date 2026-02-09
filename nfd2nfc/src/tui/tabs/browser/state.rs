@@ -1,5 +1,4 @@
 use nfd2nfc_core::normalizer::{normalize_directory, normalize_single_file, NormalizationTarget};
-use unicode_normalization::UnicodeNormalization;
 
 use crate::tui::dir_browser::{DirBrowser, UnicodeForm};
 
@@ -96,7 +95,7 @@ impl BrowserState {
 
     /// Auto-switch from NameOnly to Children when an ASCII/Mixed folder is selected.
     pub fn auto_adjust_mode(&mut self) {
-        if let Some(entry) = self.dir_browser.effective_selected_entry() {
+        if let Some(entry) = self.dir_browser.selected_entry() {
             if entry.is_dir
                 && self.mode == BrowserMode::NameOnly
                 && matches!(entry.form, UnicodeForm::ASCII | UnicodeForm::Mixed)
@@ -117,11 +116,7 @@ impl BrowserState {
 
         // Calculate the expected new path after conversion
         let new_path = if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            let new_name: String = match target {
-                NormalizationTarget::NFC => name.nfc().collect(),
-                NormalizationTarget::NFD => name.nfd().collect(),
-            };
-            path.with_file_name(new_name)
+            path.with_file_name(target.convert(name))
         } else {
             path.clone()
         };

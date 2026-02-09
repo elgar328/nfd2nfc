@@ -63,19 +63,7 @@ impl LineCache {
             let msg_style = entry_style(entry);
 
             let wrapped = wrap_text(&entry.message, available_width);
-            for (j, text) in wrapped.into_iter().enumerate() {
-                self.lines.push(CachedLine {
-                    text,
-                    style: msg_style,
-                    is_first: j == 0,
-                    display_time: if j == 0 {
-                        entry.display_time.clone()
-                    } else {
-                        String::new()
-                    },
-                    entry_index: abs_index,
-                });
-            }
+            self.push_wrapped_lines(wrapped, msg_style, &entry.display_time, abs_index);
         }
 
         self.push_padding(base_index + entries.len());
@@ -99,19 +87,7 @@ impl LineCache {
         let wrapped = wrap_text(&entry.message, available_width);
         let line_count = wrapped.len();
 
-        for (j, text) in wrapped.into_iter().enumerate() {
-            self.lines.push(CachedLine {
-                text,
-                style: msg_style,
-                is_first: j == 0,
-                display_time: if j == 0 {
-                    entry.display_time.clone()
-                } else {
-                    String::new()
-                },
-                entry_index: abs_index,
-            });
-        }
+        self.push_wrapped_lines(wrapped, msg_style, &entry.display_time, abs_index);
 
         // Re-add bottom padding
         self.push_padding(abs_index + 1);
@@ -147,6 +123,28 @@ impl LineCache {
 
     pub fn total_lines(&self) -> usize {
         self.lines.len()
+    }
+
+    fn push_wrapped_lines(
+        &mut self,
+        wrapped: Vec<String>,
+        style: Style,
+        display_time: &str,
+        entry_index: usize,
+    ) {
+        for (j, text) in wrapped.into_iter().enumerate() {
+            self.lines.push(CachedLine {
+                text,
+                style,
+                is_first: j == 0,
+                display_time: if j == 0 {
+                    display_time.to_string()
+                } else {
+                    String::new()
+                },
+                entry_index,
+            });
+        }
     }
 
     fn remove_padding(&mut self) {

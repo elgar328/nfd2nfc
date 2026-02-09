@@ -7,7 +7,7 @@ use std::fs::{self, File};
 use std::os::fd::AsRawFd;
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 use unicode_normalization::{is_nfc, is_nfd, UnicodeNormalization};
 
@@ -142,6 +142,79 @@ pub fn normalize_single_file(
     Ok(())
 }
 
+/// Process a single directory entry: rename if needed, return subdirectory path for recursion.
+fn process_entry(
+    entry: &fs::DirEntry,
+    target: NormalizationTarget,
+    target_folder: &Path,
+    recursive: bool,
+) -> Option<PathBuf> {
+    let path = entry.path();
+
+    let name = path.file_name()?;
+
+    if name == "." || name == ".." {
+        debug!("Skipping dot entry: {}", path.display());
+        return None;
+    }
+
+    let original_name = name.to_string_lossy();
+
+    let new_path = if target.needs_conversion(&original_name) {
+        let new_name = target.convert(&original_name);
+        let renamed_path = path.with_file_name(&new_name);
+        match fs::rename(&path, &renamed_path) {
+            Ok(_) => {
+                info!(
+                    "Converted {} to {}",
+                    abbreviate_home_path(&renamed_path),
+                    target.as_str()
+                );
+                renamed_path
+            }
+            Err(e) => {
+                error!(
+                    "Failed to convert {} to {}: {}",
+                    abbreviate_home_path(&path),
+                    target.as_str(),
+                    e
+                );
+                path
+            }
+        }
+    } else {
+        debug!(
+            "Entry already in {}: {}",
+            target.as_str(),
+            abbreviate_home_path(&path)
+        );
+        path
+    };
+
+    // Check if we should recurse into this directory
+    if !(recursive && new_path.is_dir()) {
+        return None;
+    }
+    let metadata = match fs::symlink_metadata(&new_path) {
+        Ok(m) => m,
+        Err(_) => {
+            error!(
+                "Failed to get metadata for {}",
+                abbreviate_home_path(&new_path)
+            );
+            return None;
+        }
+    };
+    if metadata.file_type().is_symlink() || !is_same_filesystem(target_folder, &new_path) {
+        debug!(
+            "Skipping directory (symlink or different FS): {}",
+            new_path.display()
+        );
+        return None;
+    }
+    Some(new_path)
+}
+
 /// Normalize filenames in a directory to the target normalization form.
 ///
 /// If `recursive` is true, subdirectories are also processed.
@@ -181,77 +254,7 @@ pub fn normalize_directory(
 
         let subdirs: Vec<_> = entries
             .par_iter()
-            .filter_map(|entry| {
-                let path = entry.path();
-
-                let name = match path.file_name() {
-                    Some(n) => n,
-                    None => return None,
-                };
-
-                if name == "." || name == ".." {
-                    debug!("Skipping dot entry: {}", path.display());
-                    return None;
-                }
-
-                let original_name = name.to_string_lossy();
-
-                let new_path = if target.needs_conversion(&original_name) {
-                    let new_name = target.convert(&original_name);
-                    let renamed_path = path.with_file_name(&new_name);
-                    match fs::rename(&path, &renamed_path) {
-                        Ok(_) => {
-                            info!(
-                                "Converted {} to {}",
-                                abbreviate_home_path(&renamed_path),
-                                target.as_str()
-                            );
-                            renamed_path
-                        }
-                        Err(e) => {
-                            error!(
-                                "Failed to convert {} to {}: {}",
-                                abbreviate_home_path(&path),
-                                target.as_str(),
-                                e
-                            );
-                            path
-                        }
-                    }
-                } else {
-                    debug!(
-                        "Entry already in {}: {}",
-                        target.as_str(),
-                        abbreviate_home_path(&path)
-                    );
-                    path
-                };
-
-                // Check if we should recurse into this directory
-                if !(recursive && new_path.is_dir()) {
-                    return None;
-                }
-                let metadata = match fs::symlink_metadata(&new_path) {
-                    Ok(m) => m,
-                    Err(_) => {
-                        error!(
-                            "Failed to get metadata for {}",
-                            abbreviate_home_path(&new_path)
-                        );
-                        return None;
-                    }
-                };
-                if metadata.file_type().is_symlink()
-                    || !is_same_filesystem(target_folder, &new_path)
-                {
-                    debug!(
-                        "Skipping directory (symlink or different FS): {}",
-                        new_path.display()
-                    );
-                    return None;
-                }
-                Some(new_path)
-            })
+            .filter_map(|entry| process_entry(entry, target, target_folder, recursive))
             .collect();
 
         if recursive {

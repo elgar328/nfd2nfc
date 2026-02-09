@@ -11,6 +11,7 @@ use nfd2nfc_core::normalizer::get_actual_file_name;
 use nfd2nfc_core::{is_nfc, is_nfd};
 use unicode_normalization::UnicodeNormalization;
 
+use crate::tui::component::{next_index, prev_index};
 use crate::tui::tick_timer::TickTimer;
 
 const AUTO_REFRESH_INTERVAL: Duration = Duration::from_millis(500);
@@ -235,7 +236,7 @@ impl DirBrowser {
     }
 
     pub fn selection_kind(&self) -> SelectionKind {
-        match self.effective_selected_entry() {
+        match self.selected_entry() {
             None => SelectionKind::None,
             Some(e) if e.is_parent => SelectionKind::Parent,
             Some(e) if e.is_dir => match e.form {
@@ -251,25 +252,15 @@ impl DirBrowser {
     }
 
     pub fn select_next(&mut self) {
-        if self.entries.is_empty() {
-            return;
+        if let Some(i) = next_index(self.list_state.selected(), self.entries.len()) {
+            self.list_state.select(Some(i));
         }
-        let i = match self.list_state.selected() {
-            Some(i) => (i + 1).min(self.entries.len() - 1),
-            None => 0,
-        };
-        self.list_state.select(Some(i));
     }
 
     pub fn select_previous(&mut self) {
-        if self.entries.is_empty() {
-            return;
+        if let Some(i) = prev_index(self.list_state.selected(), self.entries.len()) {
+            self.list_state.select(Some(i));
         }
-        let i = match self.list_state.selected() {
-            Some(i) => i.saturating_sub(1),
-            None => 0,
-        };
-        self.list_state.select(Some(i));
     }
 
     pub fn dir_indices(&self) -> Vec<usize> {

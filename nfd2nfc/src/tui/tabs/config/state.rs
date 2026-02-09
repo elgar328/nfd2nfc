@@ -6,7 +6,7 @@ use ratatui::widgets::TableState;
 use nfd2nfc_core::config::{load_config, Config, PathAction, PathEntry, PathMode};
 use nfd2nfc_core::constants::CONFIG_PATH;
 
-use crate::tui::component::SharedState;
+use crate::tui::component::{next_index, prev_index, SharedState};
 use crate::tui::tabs::config::modal::state::AddModalState;
 use crate::tui::tabs::Tab;
 use crate::tui::tick_timer::TickTimer;
@@ -42,26 +42,21 @@ impl ConfigState {
         state
     }
 
+    fn mark_changed(&mut self) {
+        self.has_changes = true;
+        self.config.refresh_statuses();
+    }
+
     pub fn select_next(&mut self) {
-        if self.config.paths.is_empty() {
-            return;
+        if let Some(i) = next_index(self.table_state.selected(), self.config.paths.len()) {
+            self.table_state.select(Some(i));
         }
-        let i = match self.table_state.selected() {
-            Some(i) => (i + 1).min(self.config.paths.len() - 1),
-            None => 0,
-        };
-        self.table_state.select(Some(i));
     }
 
     pub fn select_previous(&mut self) {
-        if self.config.paths.is_empty() {
-            return;
+        if let Some(i) = prev_index(self.table_state.selected(), self.config.paths.len()) {
+            self.table_state.select(Some(i));
         }
-        let i = match self.table_state.selected() {
-            Some(i) => i.saturating_sub(1),
-            None => 0,
-        };
-        self.table_state.select(Some(i));
     }
 
     pub fn move_up(&mut self) {
@@ -69,8 +64,7 @@ impl ConfigState {
             if i > 0 {
                 self.config.paths.swap(i, i - 1);
                 self.table_state.select(Some(i - 1));
-                self.has_changes = true;
-                self.config.refresh_statuses();
+                self.mark_changed();
             }
         }
     }
@@ -80,8 +74,7 @@ impl ConfigState {
             if i < self.config.paths.len() - 1 {
                 self.config.paths.swap(i, i + 1);
                 self.table_state.select(Some(i + 1));
-                self.has_changes = true;
-                self.config.refresh_statuses();
+                self.mark_changed();
             }
         }
     }
@@ -92,8 +85,7 @@ impl ConfigState {
             if self.config.paths[i].action == PathAction::Ignore {
                 self.config.paths[i].mode = PathMode::Recursive;
             }
-            self.has_changes = true;
-            self.config.refresh_statuses();
+            self.mark_changed();
         }
     }
 
@@ -103,28 +95,25 @@ impl ConfigState {
                 return;
             }
             self.config.paths[i].mode = self.config.paths[i].mode.toggle();
-            self.has_changes = true;
-            self.config.refresh_statuses();
+            self.mark_changed();
         }
     }
 
     pub fn delete_selected(&mut self) {
         if let Some(i) = self.table_state.selected() {
             self.config.paths.remove(i);
-            self.has_changes = true;
             if self.config.paths.is_empty() {
                 self.table_state.select(None);
             } else if i >= self.config.paths.len() {
                 self.table_state.select(Some(self.config.paths.len() - 1));
             }
-            self.config.refresh_statuses();
+            self.mark_changed();
         }
     }
 
     pub fn add_path(&mut self, path: PathBuf, action: PathAction, mode: PathMode) {
         self.config.paths.push(PathEntry::new(path, action, mode));
-        self.has_changes = true;
-        self.config.refresh_statuses();
+        self.mark_changed();
         self.table_state.select(Some(self.config.paths.len() - 1));
     }
 
@@ -153,8 +142,7 @@ impl ConfigState {
                 self.table_state.select(Some(new_idx));
             }
         }
-        self.has_changes = true;
-        self.config.refresh_statuses();
+        self.mark_changed();
     }
 
     pub fn poll(&mut self, shared: &SharedState) {

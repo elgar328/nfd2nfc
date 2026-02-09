@@ -36,6 +36,28 @@ pub enum Action {
     Consumed,
 }
 
+/// Compute the next selection index (clamped to len-1).
+pub fn next_index(current: Option<usize>, len: usize) -> Option<usize> {
+    if len == 0 {
+        return None;
+    }
+    Some(match current {
+        Some(i) => (i + 1).min(len - 1),
+        None => 0,
+    })
+}
+
+/// Compute the previous selection index (saturating at 0).
+pub fn prev_index(current: Option<usize>, len: usize) -> Option<usize> {
+    if len == 0 {
+        return None;
+    }
+    Some(match current {
+        Some(i) => i.saturating_sub(1),
+        None => 0,
+    })
+}
+
 /// Trait that all tab components must implement
 pub trait TabComponent {
     fn render(&mut self, f: &mut Frame, area: Rect, shared: &SharedState, mouse: &mut MouseState);
