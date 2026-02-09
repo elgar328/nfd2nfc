@@ -73,11 +73,17 @@ fn register_watch_paths(
 /// Log a summary of the registered watch paths.
 fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count: usize) {
     if recursive_count == 0 && children_count == 0 && ignore_count == 0 {
-        info!("nfd2nfc-watcher started. No paths configured.");
+        info!(
+            "nfd2nfc-watcher v{} started. No paths configured.",
+            env!("CARGO_PKG_VERSION")
+        );
     } else {
         info!(
-            "nfd2nfc-watcher started. Paths: {} recursive, {} children, {} ignored.",
-            recursive_count, children_count, ignore_count
+            "nfd2nfc-watcher v{} started. Paths: {} recursive, {} children, {} ignored.",
+            env!("CARGO_PKG_VERSION"),
+            recursive_count,
+            children_count,
+            ignore_count
         );
     }
 }
