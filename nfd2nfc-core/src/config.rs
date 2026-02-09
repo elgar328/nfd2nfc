@@ -162,6 +162,14 @@ impl ConfigError {
 
 // === Functions ===
 
+/// Map an IO error to the corresponding PathStatus.
+fn io_error_to_status(e: &std::io::Error) -> PathStatus {
+    match e.kind() {
+        std::io::ErrorKind::PermissionDenied => PathStatus::PermissionDenied,
+        _ => PathStatus::NotFound,
+    }
+}
+
 /// Validate a single path string. Returns (canonical PathBuf if valid, status).
 pub fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
     let trimmed = path_str.trim();
@@ -174,11 +182,7 @@ pub fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
         Ok(p) => p,
         Err(e) => {
             debug!("Canonicalization failed for {}: {}", expanded.display(), e);
-            return match e.kind() {
-                std::io::ErrorKind::NotFound => (None, PathStatus::NotFound),
-                std::io::ErrorKind::PermissionDenied => (None, PathStatus::PermissionDenied),
-                _ => (None, PathStatus::NotFound),
-            };
+            return (None, io_error_to_status(&e));
         }
     };
 
@@ -192,10 +196,7 @@ pub fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
         }
         Err(e) => {
             debug!("Metadata read failed for {}: {}", canonical.display(), e);
-            match e.kind() {
-                std::io::ErrorKind::PermissionDenied => (None, PathStatus::PermissionDenied),
-                _ => (None, PathStatus::NotFound),
-            }
+            (None, io_error_to_status(&e))
         }
     }
 }
@@ -220,7 +221,7 @@ fn find_duplicate(
     entries: &[PathEntry],
     statuses: &[PathStatus],
     idx: usize,
-    canonical: &PathBuf,
+    canonical: &Path,
 ) -> Option<usize> {
     (0..idx).find(|&j| {
         entries[j]
@@ -235,7 +236,7 @@ fn find_fallback_parent(
     entries: &[PathEntry],
     statuses: &[PathStatus],
     idx: usize,
-    canonical: &PathBuf,
+    canonical: &Path,
 ) -> Option<usize> {
     let mut best: Option<(usize, usize)> = None; // (index, path_len)
     for (j, entry_j) in entries.iter().enumerate() {

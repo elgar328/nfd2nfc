@@ -1,8 +1,7 @@
 use log::{error, info};
-use nfd2nfc_core::normalizer::get_actual_file_name;
+use nfd2nfc_core::normalizer::{get_actual_file_name, NormalizationTarget};
 use nfd2nfc_core::utils::abbreviate_home_path;
 use notify::Event;
-use unicode_normalization::{is_nfc, UnicodeNormalization};
 
 pub async fn handle_event(event: Event) {
     let path = match event.paths.first() {
@@ -30,11 +29,12 @@ pub async fn handle_event(event: Event) {
             }
         };
 
-    if is_nfc(&actual_name) {
+    let target = NormalizationTarget::NFC;
+    if !target.needs_conversion(&actual_name) {
         return;
     }
 
-    let nfc_file_name: String = actual_name.nfc().collect();
+    let nfc_file_name = target.convert(&actual_name);
     let new_path = path.with_file_name(&nfc_file_name);
 
     match tokio::fs::rename(path, &new_path).await {

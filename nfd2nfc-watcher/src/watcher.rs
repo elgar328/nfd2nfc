@@ -2,6 +2,7 @@ use crate::handler;
 use log::{debug, error, info};
 use nfd2nfc_core::config::{ActiveEntry, PathAction, PathMode};
 use nfd2nfc_core::constants::{HEARTBEAT_INTERVAL, HEARTBEAT_PATH};
+use nfd2nfc_core::normalizer::NormalizationTarget;
 use notify::{Error as NotifyError, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -9,7 +10,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::Semaphore;
-use unicode_normalization::is_nfc;
 
 /// Maximum number of concurrent file event handler tasks.
 const MAX_CONCURRENT_TASKS: usize = 200;
@@ -166,7 +166,7 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, entries: Vec<Activ
                             Some(name) => name,
                             None => continue,
                         };
-                        if is_nfc(file_name) {
+                        if !NormalizationTarget::NFC.needs_conversion(file_name) {
                             continue;
                         }
 

@@ -27,6 +27,22 @@ impl NormalizationTarget {
             NormalizationTarget::NFD => "NFD",
         }
     }
+
+    /// Convert a filename to this normalization form.
+    pub fn convert(&self, name: &str) -> String {
+        match self {
+            NormalizationTarget::NFC => name.nfc().collect(),
+            NormalizationTarget::NFD => name.nfd().collect(),
+        }
+    }
+
+    /// Check if a name needs conversion to this normalization form.
+    pub fn needs_conversion(&self, name: &str) -> bool {
+        match self {
+            NormalizationTarget::NFC => !is_nfc(name),
+            NormalizationTarget::NFD => !is_nfd(name),
+        }
+    }
 }
 
 /// Errors that can occur during normalization operations.
@@ -87,22 +103,6 @@ pub fn get_actual_file_name(path: &Path) -> Result<String, NormalizerError> {
         .ok_or_else(|| NormalizerError::InvalidName(path.display().to_string()))
 }
 
-/// Convert a filename to the target normalization form.
-fn convert_name(name: &str, target: NormalizationTarget) -> String {
-    match target {
-        NormalizationTarget::NFC => name.nfc().collect(),
-        NormalizationTarget::NFD => name.nfd().collect(),
-    }
-}
-
-/// Check if a name needs conversion to the target form.
-fn needs_conversion(name: &str, target: NormalizationTarget) -> bool {
-    match target {
-        NormalizationTarget::NFC => !is_nfc(name),
-        NormalizationTarget::NFD => !is_nfd(name),
-    }
-}
-
 /// Normalize a single file/folder name to the target normalization form.
 ///
 /// This function uses `get_actual_file_name` to get the real filename from disk,
@@ -119,12 +119,12 @@ pub fn normalize_single_file(
 
     let actual_name = get_actual_file_name(target_path)?;
 
-    if !needs_conversion(&actual_name, target) {
+    if !target.needs_conversion(&actual_name) {
         debug!("No conversion needed for: {}", target_path.display());
         return Ok(());
     }
 
-    let new_name = convert_name(&actual_name, target);
+    let new_name = target.convert(&actual_name);
     let new_path = target_path.with_file_name(&new_name);
 
     fs::rename(target_path, &new_path).map_err(|e| NormalizerError::RenameError {
@@ -196,8 +196,8 @@ pub fn normalize_directory(
 
                 let original_name = name.to_string_lossy();
 
-                let new_path = if needs_conversion(&original_name, target) {
-                    let new_name = convert_name(&original_name, target);
+                let new_path = if target.needs_conversion(&original_name) {
+                    let new_name = target.convert(&original_name);
                     let renamed_path = path.with_file_name(&new_name);
                     match fs::rename(&path, &renamed_path) {
                         Ok(_) => {
@@ -215,7 +215,7 @@ pub fn normalize_directory(
                                 target.as_str(),
                                 e
                             );
-                            path.clone()
+                            path
                         }
                     }
                 } else {
@@ -224,7 +224,7 @@ pub fn normalize_directory(
                         target.as_str(),
                         abbreviate_home_path(&path)
                     );
-                    path.clone()
+                    path
                 };
 
                 // Check if we should recurse into this directory
