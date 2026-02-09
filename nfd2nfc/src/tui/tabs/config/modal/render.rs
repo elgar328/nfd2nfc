@@ -82,6 +82,7 @@ pub fn render_add_modal(
         &modal
             .browser
             .selected_entry()
+            .filter(|e| !e.is_parent)
             .map(|e| e.path.to_string_lossy().to_string())
             .unwrap_or_else(|| modal.browser.current_dir.to_string_lossy().to_string()),
     );
