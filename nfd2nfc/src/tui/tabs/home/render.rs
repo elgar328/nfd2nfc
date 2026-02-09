@@ -14,7 +14,6 @@ use crate::tui::styles::{dimmed_style, watcher_status_span, StatusLabels};
 use crate::tui::tabs::home::state::HomeState;
 
 const HOME_CONTENT_WIDTH: u16 = 46;
-const HOME_CONTENT_HEIGHT: u16 = 15; // 6+1+1+3+3+1
 
 pub const ASCII_LOGO: &str = r#"o   o o--o o-o    --  o   o o--o   o-o
 |\  | |    |  \  o  o |\  | |     /   
@@ -24,7 +23,7 @@ o   o o    o-o   o--o o   o o      o-o
 "#;
 
 pub fn render(
-    _state: &mut HomeState,
+    state: &mut HomeState,
     f: &mut Frame,
     area: Rect,
     shared: &SharedState,
@@ -65,17 +64,25 @@ pub fn render(
         .items(items)
         .render(f, area, mouse);
 
-    let centered = center_rect(inner, HOME_CONTENT_WIDTH, HOME_CONTENT_HEIGHT);
+    let available_update = state.available_update.as_deref();
+    let has_update = available_update.is_some();
+    let content_height: u16 = if has_update { 17 } else { 15 };
 
-    let chunks = Layout::vertical([
+    let centered = center_rect(inner, HOME_CONTENT_WIDTH, content_height);
+
+    let mut constraints = vec![
         Constraint::Length(6), // Logo
         Constraint::Length(1), // Status
         Constraint::Length(1), // Separator line
         Constraint::Length(3), // Description (2 lines + margin)
         Constraint::Length(3), // Example box
-        Constraint::Length(1), // Repository URL
-    ])
-    .split(centered);
+        Constraint::Length(1), // Repository URL + version
+    ];
+    if has_update {
+        constraints.push(Constraint::Length(2)); // Update notification
+    }
+
+    let chunks = Layout::vertical(constraints).split(centered);
 
     // Logo
     let logo = Paragraph::new(ASCII_LOGO)
@@ -135,6 +142,17 @@ pub fn render(
         .style(dimmed_style())
         .alignment(Alignment::Right);
     f.render_widget(version, chunks[5]);
+
+    // Update notification
+    if let Some(ver) = available_update {
+        let cyan = Style::default().fg(Color::Cyan);
+        let update_text = vec![
+            Line::from(Span::styled(format!("New version available: v{ver}"), cyan)),
+            Line::from(Span::styled("Run: brew upgrade nfd2nfc", cyan)),
+        ];
+        let update = Paragraph::new(update_text).alignment(Alignment::Center);
+        f.render_widget(update, chunks[6]);
+    }
 }
 
 fn center_rect(area: Rect, width: u16, height: u16) -> Rect {

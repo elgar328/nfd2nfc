@@ -54,7 +54,7 @@ impl App {
             force_redraw: false,
             current_tab: Tab::Home,
             watcher_running,
-            home: HomeState::default(),
+            home: HomeState::new(),
             config,
             logs: LogsState::new(),
             browser: BrowserState::new(),
