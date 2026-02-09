@@ -228,30 +228,29 @@ pub fn normalize_directory(
                 };
 
                 // Check if we should recurse into this directory
-                if recursive && new_path.is_dir() {
-                    if let Ok(metadata) = fs::symlink_metadata(&new_path) {
-                        let is_symlink = metadata.file_type().is_symlink();
-                        let is_different_fs = !is_same_filesystem(target_folder, &new_path);
-
-                        if !is_symlink && !is_different_fs {
-                            Some(new_path)
-                        } else {
-                            debug!(
-                                "Skipping directory (symlink or different FS): {}",
-                                new_path.display()
-                            );
-                            None
-                        }
-                    } else {
+                if !(recursive && new_path.is_dir()) {
+                    return None;
+                }
+                let metadata = match fs::symlink_metadata(&new_path) {
+                    Ok(m) => m,
+                    Err(_) => {
                         error!(
                             "Failed to get metadata for {}",
                             abbreviate_home_path(&new_path)
                         );
-                        None
+                        return None;
                     }
-                } else {
-                    None
+                };
+                if metadata.file_type().is_symlink()
+                    || !is_same_filesystem(target_folder, &new_path)
+                {
+                    debug!(
+                        "Skipping directory (symlink or different FS): {}",
+                        new_path.display()
+                    );
+                    return None;
                 }
+                Some(new_path)
             })
             .collect();
 

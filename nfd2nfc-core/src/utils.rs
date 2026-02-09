@@ -3,9 +3,7 @@ use std::path::{Path, PathBuf};
 
 pub fn expand_tilde(path: &str) -> PathBuf {
     if let Some(stripped) = path.strip_prefix("~/") {
-        let mut home_path = HOME_DIR.clone();
-        home_path.push(stripped);
-        home_path
+        HOME_DIR.join(stripped)
     } else {
         PathBuf::from(path)
     }
@@ -21,5 +19,9 @@ pub fn abbreviate_home(path_str: &str) -> String {
 }
 
 pub fn abbreviate_home_path(path: &Path) -> String {
-    abbreviate_home(&path.display().to_string())
+    if let Ok(rest) = path.strip_prefix(&*HOME_DIR) {
+        format!("~/{}", rest.display())
+    } else {
+        path.display().to_string()
+    }
 }

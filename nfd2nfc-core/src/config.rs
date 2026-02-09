@@ -204,19 +204,14 @@ pub fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
 /// then by original index for stable ordering.
 fn build_processing_order(entries: &[PathEntry]) -> Vec<usize> {
     let mut order: Vec<usize> = (0..entries.len()).collect();
-    order.sort_by(|&a, &b| {
-        let len_a = entries[a]
+    let canonical_len = |idx: usize| {
+        entries[idx]
             .canonical
             .as_ref()
             .map(|p| p.as_os_str().len())
-            .unwrap_or(0);
-        let len_b = entries[b]
-            .canonical
-            .as_ref()
-            .map(|p| p.as_os_str().len())
-            .unwrap_or(0);
-        len_a.cmp(&len_b).then(a.cmp(&b))
-    });
+            .unwrap_or(0)
+    };
+    order.sort_by(|&a, &b| canonical_len(a).cmp(&canonical_len(b)).then(a.cmp(&b)));
     order
 }
 
@@ -288,19 +283,18 @@ pub fn compute_statuses(entries: &mut [PathEntry]) {
     let mut overrides: Vec<Option<usize>> = vec![None; entries.len()];
 
     for &idx in &order {
-        let canonical = match &entries[idx].canonical {
-            Some(c) => c.clone(),
-            None => continue,
+        let Some(canonical) = entries[idx].canonical.as_ref() else {
+            continue;
         };
 
         // Rule 1: same canonical path at lower index that is Active
-        if let Some(dup_idx) = find_duplicate(entries, &statuses, idx, &canonical) {
+        if let Some(dup_idx) = find_duplicate(entries, &statuses, idx, canonical) {
             statuses[idx] = PathStatus::Redundant(dup_idx);
             continue;
         }
 
         // Rule 2-5: find fallback parent and determine status
-        if let Some(f_idx) = find_fallback_parent(entries, &statuses, idx, &canonical) {
+        if let Some(f_idx) = find_fallback_parent(entries, &statuses, idx, canonical) {
             if entries[f_idx].action == entries[idx].action {
                 statuses[idx] = PathStatus::Redundant(f_idx);
             } else {

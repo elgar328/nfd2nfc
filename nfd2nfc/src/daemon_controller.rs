@@ -4,18 +4,20 @@ use nfd2nfc_core::constants::{
 use std::process::Command;
 use std::time::Duration;
 
-fn launch_watcher_and_confirm() -> Result<(), String> {
-    // Load the watcher service (starts automatically with RunAtLoad: true).
+fn run_launchctl(subcommand: &str, action_desc: &str) -> Result<(), String> {
     let status = Command::new("launchctl")
-        .arg("load")
-        .arg("-w")
+        .args([subcommand, "-w"])
         .arg(&*PLIST_PATH)
         .status()
-        .map_err(|e| format!("Failed to start watcher: {}", e))?;
-
+        .map_err(|e| format!("Failed to {action_desc}: {e}"))?;
     if !status.success() {
-        return Err(format!("Failed to start watcher: {}", status));
+        return Err(format!("Failed to {action_desc}: {status}"));
     }
+    Ok(())
+}
+
+fn launch_watcher_and_confirm() -> Result<(), String> {
+    run_launchctl("load", "start watcher")?;
 
     // Wait for heartbeat file to be created/updated (max 5 seconds).
     for _ in 0..250 {
@@ -29,18 +31,7 @@ fn launch_watcher_and_confirm() -> Result<(), String> {
 }
 
 fn unload_watcher_service() -> Result<(), String> {
-    let status = Command::new("launchctl")
-        .arg("unload")
-        .arg("-w")
-        .arg(&*PLIST_PATH)
-        .status()
-        .map_err(|e| format!("Failed to stop service: {}", e))?;
-
-    if !status.success() {
-        return Err(format!("Failed to stop service: {}", status));
-    }
-
-    Ok(())
+    run_launchctl("unload", "stop service")
 }
 
 /// Check if heartbeat file exists and was modified within max_age.
