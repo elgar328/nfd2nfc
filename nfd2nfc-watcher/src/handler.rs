@@ -1,5 +1,5 @@
 use log::{error, info};
-use nfd2nfc_core::normalizer::{get_actual_file_name, NormalizationTarget};
+use nfd2nfc_core::normalizer::get_actual_file_name;
 use nfd2nfc_core::utils::abbreviate_home_path;
 use notify::Event;
 use unicode_normalization::{is_nfc, UnicodeNormalization};
@@ -38,11 +38,7 @@ pub async fn handle_event(event: Event) {
     let new_path = path.with_file_name(&nfc_file_name);
 
     match tokio::fs::rename(path, &new_path).await {
-        Ok(()) => info!(
-            "Converted to {}: {}",
-            NormalizationTarget::NFC.as_str(),
-            abbreviate_home_path(&new_path)
-        ),
+        Ok(()) => info!("NFD→NFC: {}", abbreviate_home_path(&new_path)),
         Err(e) => {
             if e.kind() != std::io::ErrorKind::NotFound {
                 error!(
