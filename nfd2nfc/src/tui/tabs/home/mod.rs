@@ -20,7 +20,7 @@ impl TabComponent for HomeState {
         events::handle_key(self, key, shared)
     }
 
-    fn tick(&mut self, _shared: &SharedState) {
-        self.tick_version_check();
+    fn tick(&mut self, _shared: &SharedState) -> Option<Action> {
+        self.tick_version_check()
     }
 }

@@ -33,8 +33,9 @@ impl TabComponent for BrowserState {
         events::handle_double_click(self, x, y)
     }
 
-    fn tick(&mut self, shared: &SharedState) {
+    fn tick(&mut self, shared: &SharedState) -> Option<Action> {
         self.dir_browser.tick(shared.current_tab == Tab::Browser);
         self.auto_adjust_mode();
+        None
     }
 }

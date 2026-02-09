@@ -28,7 +28,8 @@ impl TabComponent for LogsState {
         events::handle_mouse_click(self, x, y)
     }
 
-    fn tick(&mut self, _shared: &SharedState) {
+    fn tick(&mut self, _shared: &SharedState) -> Option<Action> {
         self.process_events();
+        None
     }
 }

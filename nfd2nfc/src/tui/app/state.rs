@@ -4,6 +4,7 @@ use nfd2nfc_core::config::load_config;
 use nfd2nfc_core::constants::HEARTBEAT_CHECK_INTERVAL;
 
 use crate::daemon_controller;
+use crate::tui::app::events::process_action;
 use crate::tui::app::events::MouseState;
 use crate::tui::component::{SharedState, TabComponent};
 use crate::tui::tabs::{BrowserState, ConfigState, HomeState, LogsState, Tab};
@@ -114,10 +115,17 @@ impl App {
 
         // Tick all tab components
         let shared = self.shared_state();
-        self.home.tick(&shared);
-        self.config.tick(&shared);
-        self.logs.tick(&shared);
-        self.browser.tick(&shared);
+        for action in [
+            self.home.tick(&shared),
+            self.config.tick(&shared),
+            self.logs.tick(&shared),
+            self.browser.tick(&shared),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            process_action(self, action);
+        }
     }
 
     pub fn show_toast(&mut self, message: String, is_error: bool) {

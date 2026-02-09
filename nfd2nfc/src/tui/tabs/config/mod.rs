@@ -33,7 +33,8 @@ impl TabComponent for ConfigState {
         events::handle_double_click(self, x, y)
     }
 
-    fn tick(&mut self, shared: &SharedState) {
-        self.tick(shared);
+    fn tick(&mut self, shared: &SharedState) -> Option<Action> {
+        self.poll(shared);
+        None
     }
 }

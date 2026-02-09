@@ -53,5 +53,7 @@ pub trait TabComponent {
         None
     }
 
-    fn tick(&mut self, _shared: &SharedState) {}
+    fn tick(&mut self, _shared: &SharedState) -> Option<Action> {
+        None
+    }
 }

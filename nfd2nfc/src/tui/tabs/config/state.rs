@@ -157,7 +157,7 @@ impl ConfigState {
         self.config.refresh_statuses();
     }
 
-    pub fn tick(&mut self, shared: &SharedState) {
+    pub fn poll(&mut self, shared: &SharedState) {
         if shared.current_tab == Tab::Config {
             self.modal.tick();
             if !self.modal.show {
