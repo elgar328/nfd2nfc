@@ -108,12 +108,10 @@ pub fn render(
             if entry.is_parent {
                 ListItem::new(Line::from(vec![
                     Span::styled("📂", Style::default().fg(Color::Yellow)),
-                    Span::styled("../", Style::default().fg(Color::Yellow)),
+                    Span::styled("..", Style::default().fg(Color::Yellow)),
                 ]))
             } else {
                 let icon = if entry.is_dir { "📁" } else { "📄" };
-                let suffix = if entry.is_dir { "/" } else { "" };
-
                 let style = if entry.is_dir {
                     Style::default().fg(Color::Cyan)
                 } else {
@@ -122,7 +120,7 @@ pub fn render(
 
                 let mut spans = vec![
                     Span::styled(icon, style),
-                    Span::styled(format!("{}{}", entry.name, suffix), style),
+                    Span::styled(entry.name.clone(), style),
                 ];
 
                 if entry.form != UnicodeForm::ASCII {
