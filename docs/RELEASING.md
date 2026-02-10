@@ -24,7 +24,7 @@ Pushing a `v*` tag triggers the automated release pipeline:
 
 ```bash
 git tag vX.Y.Z
-git push origin --tags
+git push origin vX.Y.Z
 ```
 
 ### 3. Set the next dev version
