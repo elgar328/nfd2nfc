@@ -12,7 +12,9 @@ use crate::tui::app::events::MouseState;
 use crate::tui::app::render::content_area;
 use crate::tui::component::SharedState;
 use crate::tui::dir_browser::{SelectionKind, UnicodeForm};
-use crate::tui::shortcuts::{gap, nav_arrows, shortcut, shortcut_bracketed, space, ShortcutBlock};
+use crate::tui::shortcuts::{
+    gap, nav_arrows, render_centered_options, shortcut, shortcut_bracketed, space, ShortcutBlock,
+};
 use crate::tui::styles::{
     active_value_style, inactive_italic_style, inactive_style, key_style, label_style,
     reverse_value_style,
@@ -233,17 +235,7 @@ pub fn render(
         ),
     ];
 
-    let total_width: u16 = option_items
-        .iter()
-        .flat_map(|(spans, _)| spans.iter())
-        .map(|s| s.content.width() as u16)
-        .sum();
-    let x_start = options_area.x + (options_area.width.saturating_sub(total_width)) / 2;
-
-    let option_spans = mouse.add_shortcuts(option_items, x_start, options_area.y);
-    let options_para = Paragraph::new(Line::from(option_spans));
-    let render_area = Rect::new(x_start, options_area.y, total_width, 1);
-    f.render_widget(options_para, render_area);
+    render_centered_options(option_items, options_area, f, mouse);
 }
 
 // ─────────────────────────────────────────────────────────────

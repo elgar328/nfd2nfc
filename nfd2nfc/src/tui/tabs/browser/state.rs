@@ -106,7 +106,7 @@ impl BrowserState {
     }
 
     pub fn convert_selected(&mut self) -> Result<(), String> {
-        let entry = match self.dir_browser.effective_selected_entry() {
+        let entry = match self.dir_browser.selected_entry().cloned() {
             Some(e) => e,
             None => return Err("No item selected".to_string()),
         };

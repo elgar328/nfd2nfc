@@ -19,6 +19,15 @@ pub enum ToastLevel {
     Error,
 }
 
+impl ToastLevel {
+    fn color(&self) -> Color {
+        match self {
+            ToastLevel::Success => Color::Green,
+            ToastLevel::Error => Color::Red,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum ToastPhase {
     Display,
@@ -125,10 +134,7 @@ impl ToastState {
             let visible_width = max_width.min(right_edge.saturating_sub(x));
             let toast_rect = Rect::new(x, current_y, visible_width, toast_height);
 
-            let color = match toast.level {
-                ToastLevel::Success => Color::Green,
-                ToastLevel::Error => Color::Red,
-            };
+            let color = toast.level.color();
 
             // Remove right border when partially clipped for a natural slide-out effect
             let clipped = visible_width < max_width;

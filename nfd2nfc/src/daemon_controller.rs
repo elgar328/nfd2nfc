@@ -1,6 +1,4 @@
-use nfd2nfc_core::constants::{
-    HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, HOME_DIR, NFD2NFC_SERVICE_LABEL, PLIST_PATH,
-};
+use nfd2nfc_core::constants::{plist_path, HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, PLIST_PATH};
 use std::process::Command;
 use std::time::Duration;
 
@@ -44,10 +42,7 @@ fn check_heartbeat_fresh(max_age: Duration) -> bool {
 
 /// Check if plist file exists.
 fn is_plist_installed() -> bool {
-    HOME_DIR
-        .join("Library/LaunchAgents")
-        .join(format!("{}.plist", NFD2NFC_SERVICE_LABEL))
-        .exists()
+    plist_path().exists()
 }
 
 /// Register the service via `brew services start nfd2nfc` if the plist is not installed.

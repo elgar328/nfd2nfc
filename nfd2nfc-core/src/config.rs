@@ -123,6 +123,26 @@ impl PathEntry {
             overrides: None,
         }
     }
+
+    fn from_config_entry(cfe: ConfigFileEntry) -> Self {
+        let (canonical, status) = validate_path(&cfe.path);
+        Self {
+            raw: cfe.path,
+            action: cfe.action,
+            mode: cfe.mode,
+            canonical,
+            status,
+            overrides: None,
+        }
+    }
+
+    fn to_config_entry(&self) -> ConfigFileEntry {
+        ConfigFileEntry {
+            path: self.raw.clone(),
+            action: self.action,
+            mode: self.mode,
+        }
+    }
 }
 
 /// Active entry summary for watcher event filtering.
@@ -348,17 +368,7 @@ pub fn load_config() -> (Config, Option<ConfigError>) {
     let mut entries: Vec<PathEntry> = config_file
         .paths
         .into_iter()
-        .map(|cfe| {
-            let (canonical, status) = validate_path(&cfe.path);
-            PathEntry {
-                raw: cfe.path,
-                action: cfe.action,
-                mode: cfe.mode,
-                canonical,
-                status,
-                overrides: None,
-            }
-        })
+        .map(PathEntry::from_config_entry)
         .collect();
 
     compute_statuses(&mut entries);
@@ -398,15 +408,7 @@ impl Config {
     /// Save config to file in [[paths]] TOML format.
     pub fn save_to_file(&self, path: &Path) -> Result<(), ConfigError> {
         let config_file = ConfigFile {
-            paths: self
-                .paths
-                .iter()
-                .map(|e| ConfigFileEntry {
-                    path: e.raw.clone(),
-                    action: e.action,
-                    mode: e.mode,
-                })
-                .collect(),
+            paths: self.paths.iter().map(PathEntry::to_config_entry).collect(),
         };
 
         let toml_content = toml::to_string_pretty(&config_file)?;

@@ -2,9 +2,10 @@ use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Rect},
     text::{Line, Span},
-    widgets::{Block, Borders},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::tui::app::events::MouseState;
 use crate::tui::styles::{border_style, dimmed_style, key_style, label_style};
@@ -112,6 +113,24 @@ pub fn nav_arrows() -> Vec<(Vec<Span<'static>>, Option<KeyCode>)> {
             None,
         ),
     ]
+}
+
+/// Render option items centered horizontally within the given area.
+pub fn render_centered_options(
+    items: Vec<(Vec<Span>, Option<KeyCode>)>,
+    area: Rect,
+    f: &mut Frame,
+    mouse: &mut MouseState,
+) {
+    let total_width: u16 = items
+        .iter()
+        .flat_map(|(spans, _)| spans.iter())
+        .map(|s| s.content.width() as u16)
+        .sum();
+    let x_start = area.x + (area.width.saturating_sub(total_width)) / 2;
+    let spans = mouse.add_shortcuts(items, x_start, area.y);
+    let para = Paragraph::new(Line::from(spans));
+    f.render_widget(para, Rect::new(x_start, area.y, total_width, 1));
 }
 
 /// Single space separator.

@@ -20,14 +20,7 @@ pub fn handle_key(state: &mut BrowserState, key: KeyCode, _shared: &SharedState)
             None
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            let path = state
-                .dir_browser
-                .selected_entry()
-                .filter(|e| e.is_dir && !e.is_parent)
-                .map(|e| e.path.clone());
-            if let Some(path) = path {
-                state.dir_browser.enter_directory(&path);
-            }
+            state.dir_browser.try_enter_selected();
             None
         }
         KeyCode::Enter => {

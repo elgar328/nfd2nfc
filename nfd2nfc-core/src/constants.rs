@@ -36,7 +36,7 @@ pub static HOME_DIR: Lazy<PathBuf> = Lazy::new(|| match dirs::home_dir() {
     }
 });
 
-fn plist_path() -> PathBuf {
+pub fn plist_path() -> PathBuf {
     HOME_DIR
         .join("Library/LaunchAgents")
         .join(format!("{}.plist", NFD2NFC_SERVICE_LABEL))

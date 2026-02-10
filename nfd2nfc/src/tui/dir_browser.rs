@@ -235,10 +235,6 @@ impl DirBrowser {
             .and_then(|idx| self.entries.get(idx))
     }
 
-    pub fn effective_selected_entry(&self) -> Option<BrowserEntry> {
-        self.selected_entry().cloned()
-    }
-
     pub fn selection_kind(&self) -> SelectionKind {
         match self.selected_entry() {
             None => SelectionKind::None,
@@ -295,6 +291,16 @@ impl DirBrowser {
         let current = self.list_state.selected().unwrap_or(0);
         if let Some(&prev) = dirs.iter().rev().find(|&&i| i < current) {
             self.list_state.select(Some(prev));
+        }
+    }
+
+    pub fn try_enter_selected(&mut self) {
+        let path = self
+            .selected_entry()
+            .filter(|e| e.is_dir && !e.is_parent)
+            .map(|e| e.path.clone());
+        if let Some(path) = path {
+            self.enter_directory(&path);
         }
     }
 
