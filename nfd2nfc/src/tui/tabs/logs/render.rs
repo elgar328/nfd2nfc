@@ -31,23 +31,21 @@ fn format_count(n: usize) -> String {
     result
 }
 
+fn format_unit(n: usize, threshold: usize, frac_divisor: usize, suffix: &str) -> String {
+    let whole = n / threshold;
+    let frac = (n % threshold) / frac_divisor;
+    if frac == 0 {
+        format!("{}{}", whole, suffix)
+    } else {
+        format!("{}.{}{}", whole, frac, suffix)
+    }
+}
+
 fn format_compact(n: usize) -> String {
     if n >= 1_000_000 {
-        let whole = n / 1_000_000;
-        let frac = (n % 1_000_000) / 100_000;
-        if frac == 0 {
-            format!("{}M", whole)
-        } else {
-            format!("{}.{}M", whole, frac)
-        }
+        format_unit(n, 1_000_000, 100_000, "M")
     } else if n >= 1_000 {
-        let whole = n / 1_000;
-        let frac = (n % 1_000) / 100;
-        if frac == 0 {
-            format!("{}K", whole)
-        } else {
-            format!("{}.{}K", whole, frac)
-        }
+        format_unit(n, 1_000, 100, "K")
     } else {
         format_count(n)
     }

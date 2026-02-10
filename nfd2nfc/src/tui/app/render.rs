@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
     Frame,
@@ -9,7 +9,7 @@ use strum::IntoEnumIterator;
 
 use crate::tui::app::state::App;
 use crate::tui::component::TabComponent;
-use crate::tui::styles::{border_style, watcher_status_span, StatusLabels};
+use crate::tui::styles::{bold_fg, border_style, key_style, watcher_status_span, StatusLabels};
 use crate::tui::tabs::Tab;
 
 pub struct AppLayout {
@@ -77,11 +77,9 @@ fn draw_header(f: &mut Frame, app: &mut App) {
     // Leading space to match original Tabs widget padding
     items.push((vec![Span::raw(" ")], None));
     items.extend(Tab::iter().enumerate().flat_map(|(i, tab)| {
-        let superscript_style = Style::default().fg(Color::Red).add_modifier(Modifier::BOLD);
+        let superscript_style = key_style();
         let title_style = if tab.index() == current_idx {
-            Style::default()
-                .fg(Color::LightCyan)
-                .add_modifier(Modifier::BOLD)
+            bold_fg(Color::LightCyan)
         } else {
             Style::default().fg(Color::White)
         };

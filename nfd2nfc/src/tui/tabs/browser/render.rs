@@ -12,7 +12,7 @@ use crate::tui::app::events::MouseState;
 use crate::tui::app::render::content_area;
 use crate::tui::component::SharedState;
 use crate::tui::dir_browser::{SelectionKind, UnicodeForm};
-use crate::tui::shortcuts::{gap, shortcut, shortcut_bracketed, space, ShortcutBlock};
+use crate::tui::shortcuts::{gap, nav_arrows, shortcut, shortcut_bracketed, space, ShortcutBlock};
 use crate::tui::styles::{
     active_value_style, inactive_italic_style, inactive_style, key_style, label_style,
     reverse_value_style,
@@ -36,19 +36,8 @@ pub fn render(
         items.push(shortcut_bracketed("↵", "Convert", KeyCode::Enter));
         items.push(gap());
     }
+    items.extend(nav_arrows());
     items.extend(vec![
-        (vec![Span::styled("[", label_style())], None),
-        (vec![Span::styled("←", key_style())], Some(KeyCode::Left)),
-        (vec![Span::styled("↑", key_style())], Some(KeyCode::Up)),
-        (vec![Span::styled("↓", key_style())], Some(KeyCode::Down)),
-        (vec![Span::styled("→", key_style())], Some(KeyCode::Right)),
-        (
-            vec![
-                Span::styled("]", label_style()),
-                Span::styled("Navigate", label_style()),
-            ],
-            None,
-        ),
         gap(),
         shortcut_bracketed(".", "Hidden", KeyCode::Char('.')),
         gap(),
@@ -172,9 +161,7 @@ pub fn render(
 
     let (action_key_style, action_label_style, action_text, action_text_style) = match kind {
         // Inactive N/A
-        SelectionKind::Parent | SelectionKind::FileAscii | SelectionKind::None => {
-            (gray, gray, "N/A", gray_italic)
-        }
+        _ if kind.is_inactive() => (gray, gray, "N/A", gray_italic),
         // File: auto-determined (gray)
         SelectionKind::FileNFD => (gray, gray, "Convert (NFD→NFC)", gray_italic),
         SelectionKind::FileNFC => (gray, gray, "Reverse (NFC→NFD)", gray_italic),
@@ -191,9 +178,7 @@ pub fn render(
     };
 
     let (mode_key_style, mode_label_style, mode_text, mode_text_style) = match kind {
-        SelectionKind::Parent | SelectionKind::FileAscii | SelectionKind::None => {
-            (gray, gray, "N/A", gray_italic)
-        }
+        _ if kind.is_inactive() => (gray, gray, "N/A", gray_italic),
         SelectionKind::FileNFD | SelectionKind::FileNFC => (gray, gray, "Name only", gray_italic),
         _ => (
             active_key,
@@ -216,9 +201,10 @@ pub fn render(
         Span::styled("ion: ", action_label_style),
         Span::styled(action_text, action_text_style),
     ];
-    let separator_style = match kind {
-        SelectionKind::Parent | SelectionKind::FileAscii | SelectionKind::None => gray,
-        _ => Style::default(),
+    let separator_style = if kind.is_inactive() {
+        gray
+    } else {
+        Style::default()
     };
     let separator_spans = vec![Span::styled("  |  ", separator_style)];
     let mode_spans = vec![

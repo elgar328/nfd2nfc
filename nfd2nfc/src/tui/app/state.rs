@@ -38,6 +38,14 @@ impl PendingWatcherOperation {
             Self::Restarting => "restart",
         }
     }
+
+    pub fn progress_str(&self) -> &'static str {
+        match self {
+            Self::Starting => "Starting...",
+            Self::Stopping => "Stopping...",
+            Self::Restarting => "Restarting...",
+        }
+    }
 }
 
 pub struct AsyncOperation {

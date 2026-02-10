@@ -20,24 +20,24 @@ pub fn handle_key(state: &mut BrowserState, key: KeyCode, _shared: &SharedState)
             None
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            if let Some(entry) = state.dir_browser.effective_selected_entry() {
-                if entry.is_dir && !entry.is_parent {
-                    state.dir_browser.enter_directory(&entry.path);
-                }
+            let path = state
+                .dir_browser
+                .selected_entry()
+                .filter(|e| e.is_dir && !e.is_parent)
+                .map(|e| e.path.clone());
+            if let Some(path) = path {
+                state.dir_browser.enter_directory(&path);
             }
             None
         }
         KeyCode::Enter => {
             let kind = state.dir_browser.selection_kind();
-            if matches!(
-                kind,
-                SelectionKind::Parent | SelectionKind::FileAscii | SelectionKind::None
-            ) {
+            if kind.is_inactive() {
                 return None;
             }
 
             // Auto-determine action for files or directories in NameOnly mode
-            if let Some(entry) = state.dir_browser.effective_selected_entry() {
+            if let Some(entry) = state.dir_browser.selected_entry() {
                 let needs_auto_action = !entry.is_dir || state.mode == BrowserMode::NameOnly;
 
                 if needs_auto_action {

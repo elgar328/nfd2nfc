@@ -38,10 +38,13 @@ pub fn handle_modal_key(
             (None, None)
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            if let Some(entry) = modal.browser.effective_selected_entry() {
-                if entry.is_dir && !entry.is_parent {
-                    modal.browser.enter_directory(&entry.path);
-                }
+            let path = modal
+                .browser
+                .selected_entry()
+                .filter(|e| e.is_dir && !e.is_parent)
+                .map(|e| e.path.clone());
+            if let Some(path) = path {
+                modal.browser.enter_directory(&path);
             }
             (None, None)
         }

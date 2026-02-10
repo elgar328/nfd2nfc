@@ -10,7 +10,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::tui::app::events::MouseState;
 use crate::tui::dir_browser::SelectionKind;
-use crate::tui::shortcuts::{gap, shortcut_bracketed, space, ShortcutBlock};
+use crate::tui::shortcuts::{gap, nav_arrows, shortcut_bracketed, space, ShortcutBlock};
 use crate::tui::styles::{
     active_value_style, inactive_italic_style, inactive_style, key_style, label_style,
     reverse_value_style,
@@ -50,19 +50,8 @@ pub fn render_add_modal(
         items.push(shortcut_bracketed("↵", "Add", KeyCode::Enter));
         items.push(gap());
     }
+    items.extend(nav_arrows());
     items.extend(vec![
-        (vec![Span::styled("[", label_style())], None),
-        (vec![Span::styled("←", key_style())], Some(KeyCode::Left)),
-        (vec![Span::styled("↑", key_style())], Some(KeyCode::Up)),
-        (vec![Span::styled("↓", key_style())], Some(KeyCode::Down)),
-        (vec![Span::styled("→", key_style())], Some(KeyCode::Right)),
-        (
-            vec![
-                Span::styled("]", label_style()),
-                Span::styled("Navigate", label_style()),
-            ],
-            None,
-        ),
         gap(),
         shortcut_bracketed(".", "Hidden", KeyCode::Char('.')),
         gap(),

@@ -96,6 +96,24 @@ pub fn shortcut_bracketed<'b>(
     )
 }
 
+/// Navigation arrow keys: `[←↑↓→]Navigate`
+pub fn nav_arrows() -> Vec<(Vec<Span<'static>>, Option<KeyCode>)> {
+    vec![
+        (vec![Span::styled("[", label_style())], None),
+        (vec![Span::styled("←", key_style())], Some(KeyCode::Left)),
+        (vec![Span::styled("↑", key_style())], Some(KeyCode::Up)),
+        (vec![Span::styled("↓", key_style())], Some(KeyCode::Down)),
+        (vec![Span::styled("→", key_style())], Some(KeyCode::Right)),
+        (
+            vec![
+                Span::styled("]", label_style()),
+                Span::styled("Navigate", label_style()),
+            ],
+            None,
+        ),
+    ]
+}
+
 /// Single space separator.
 pub fn space() -> (Vec<Span<'static>>, Option<KeyCode>) {
     (vec![Span::raw(" ")], None)

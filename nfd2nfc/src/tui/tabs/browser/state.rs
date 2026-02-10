@@ -121,22 +121,11 @@ impl BrowserState {
             path.clone()
         };
 
-        let result = match self.mode {
-            BrowserMode::NameOnly => normalize_single_file(path, target),
-            BrowserMode::Children => {
-                if path.is_dir() {
-                    normalize_directory(path, false, target)
-                } else {
-                    normalize_single_file(path, target)
-                }
-            }
-            BrowserMode::Recursive => {
-                if path.is_dir() {
-                    normalize_directory(path, true, target)
-                } else {
-                    normalize_single_file(path, target)
-                }
-            }
+        let result = if self.mode == BrowserMode::NameOnly || !path.is_dir() {
+            normalize_single_file(path, target)
+        } else {
+            let recursive = self.mode == BrowserMode::Recursive;
+            normalize_directory(path, recursive, target)
         };
 
         result.map_err(|e| e.to_string())?;

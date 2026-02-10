@@ -3,8 +3,12 @@ use ratatui::text::Span;
 
 use crate::tui::app::state::PendingWatcherOperation;
 
+pub fn bold_fg(color: Color) -> Style {
+    Style::default().fg(color).add_modifier(Modifier::BOLD)
+}
+
 pub fn key_style() -> Style {
-    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+    bold_fg(Color::Red)
 }
 
 pub fn label_style() -> Style {
@@ -16,31 +20,19 @@ pub fn dimmed_style() -> Style {
 }
 
 pub fn status_running_style() -> Style {
-    Style::default()
-        .fg(Color::Green)
-        .add_modifier(Modifier::BOLD)
+    bold_fg(Color::Green)
 }
-
 pub fn status_stopped_style() -> Style {
-    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+    bold_fg(Color::Red)
 }
-
 pub fn status_pending_style() -> Style {
-    Style::default()
-        .fg(Color::Yellow)
-        .add_modifier(Modifier::BOLD)
+    bold_fg(Color::Yellow)
 }
-
 pub fn active_value_style() -> Style {
-    Style::default()
-        .fg(Color::White)
-        .add_modifier(Modifier::BOLD)
+    bold_fg(Color::White)
 }
-
 pub fn reverse_value_style() -> Style {
-    Style::default()
-        .fg(Color::Yellow)
-        .add_modifier(Modifier::BOLD)
+    bold_fg(Color::Yellow)
 }
 
 pub fn inactive_style() -> Style {
@@ -72,26 +64,12 @@ pub fn watcher_status_span(
     labels: &StatusLabels,
 ) -> Span<'static> {
     if let Some(op) = pending_op {
-        let label = match op {
-            PendingWatcherOperation::Starting => {
-                format!(
-                    "{}Starting...{}",
-                    labels.pending_prefix, labels.pending_suffix
-                )
-            }
-            PendingWatcherOperation::Stopping => {
-                format!(
-                    "{}Stopping...{}",
-                    labels.pending_prefix, labels.pending_suffix
-                )
-            }
-            PendingWatcherOperation::Restarting => {
-                format!(
-                    "{}Restarting...{}",
-                    labels.pending_prefix, labels.pending_suffix
-                )
-            }
-        };
+        let label = format!(
+            "{}{}{}",
+            labels.pending_prefix,
+            op.progress_str(),
+            labels.pending_suffix
+        );
         Span::styled(label, status_pending_style())
     } else if watcher_running {
         Span::styled(labels.running, status_running_style())

@@ -59,24 +59,23 @@ impl ConfigState {
         }
     }
 
-    pub fn move_up(&mut self) {
+    fn move_item(&mut self, offset: isize) {
         if let Some(i) = self.table_state.selected() {
-            if i > 0 {
-                self.config.paths.swap(i, i - 1);
-                self.table_state.select(Some(i - 1));
-                self.mark_changed();
+            if let Some(new_i) = i.checked_add_signed(offset) {
+                if new_i < self.config.paths.len() {
+                    self.config.paths.swap(i, new_i);
+                    self.table_state.select(Some(new_i));
+                    self.mark_changed();
+                }
             }
         }
     }
 
+    pub fn move_up(&mut self) {
+        self.move_item(-1);
+    }
     pub fn move_down(&mut self) {
-        if let Some(i) = self.table_state.selected() {
-            if i < self.config.paths.len() - 1 {
-                self.config.paths.swap(i, i + 1);
-                self.table_state.select(Some(i + 1));
-                self.mark_changed();
-            }
-        }
+        self.move_item(1);
     }
 
     pub fn toggle_action(&mut self) {

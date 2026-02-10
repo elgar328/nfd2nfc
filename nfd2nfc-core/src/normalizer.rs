@@ -19,15 +19,16 @@ pub enum NormalizationTarget {
     NFD,
 }
 
-impl NormalizationTarget {
-    /// Returns the string representation of the normalization target.
-    pub fn as_str(&self) -> &'static str {
+impl std::fmt::Display for NormalizationTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NormalizationTarget::NFC => "NFC",
-            NormalizationTarget::NFD => "NFD",
+            NormalizationTarget::NFC => write!(f, "NFC"),
+            NormalizationTarget::NFD => write!(f, "NFD"),
         }
     }
+}
 
+impl NormalizationTarget {
     /// Convert a filename to this normalization form.
     pub fn convert(&self, name: &str) -> String {
         match self {
@@ -113,7 +114,7 @@ pub fn normalize_single_file(
 ) -> Result<(), NormalizerError> {
     info!(
         "Starting single file conversion to {} for: {}",
-        target.as_str(),
+        target,
         abbreviate_home_path(target_path)
     );
 
@@ -136,7 +137,7 @@ pub fn normalize_single_file(
     info!(
         "Converted {} to {}",
         abbreviate_home_path(&new_path),
-        target.as_str()
+        target
     );
 
     Ok(())
@@ -168,7 +169,7 @@ fn process_entry(
                 info!(
                     "Converted {} to {}",
                     abbreviate_home_path(&renamed_path),
-                    target.as_str()
+                    target
                 );
                 renamed_path
             }
@@ -176,7 +177,7 @@ fn process_entry(
                 error!(
                     "Failed to convert {} to {}: {}",
                     abbreviate_home_path(&path),
-                    target.as_str(),
+                    target,
                     e
                 );
                 path
@@ -185,7 +186,7 @@ fn process_entry(
     } else {
         debug!(
             "Entry already in {}: {}",
-            target.as_str(),
+            target,
             abbreviate_home_path(&path)
         );
         path
@@ -226,7 +227,7 @@ pub fn normalize_directory(
 ) -> Result<(), NormalizerError> {
     info!(
         "Starting folder conversion to {} for: {} (recursive: {})",
-        target.as_str(),
+        target,
         abbreviate_home_path(target_folder),
         recursive
     );
@@ -264,7 +265,7 @@ pub fn normalize_directory(
 
     info!(
         "Completed folder conversion to {} for: {}",
-        target.as_str(),
+        target,
         abbreviate_home_path(target_folder)
     );
 
@@ -287,10 +288,7 @@ fn is_same_filesystem(_original_path: &Path, _new_path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{self, File};
-    use std::path::PathBuf;
     use tempfile::TempDir;
-    use unicode_normalization::UnicodeNormalization;
 
     /// Create a file with NFD filename in the given directory.
     fn create_nfd_file(dir: &Path, name: &str) -> PathBuf {

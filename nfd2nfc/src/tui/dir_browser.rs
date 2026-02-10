@@ -68,6 +68,10 @@ impl SelectionKind {
     pub fn is_dir(&self) -> bool {
         matches!(self, Self::DirUnicode | Self::DirAscii)
     }
+
+    pub fn is_inactive(&self) -> bool {
+        matches!(self, Self::Parent | Self::FileAscii | Self::None)
+    }
 }
 
 #[derive(Debug, Clone)]
