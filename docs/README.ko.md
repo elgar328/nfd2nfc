@@ -34,25 +34,25 @@ macOS는 파일명을 NFD로 저장하지만, Windows와 Linux는 NFC를 사용�
 
 ## Home
 
-<img src="../assets/home.png" alt="Home" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/home.png" alt="Home" width="750" />
 
 Home 탭에서 watcher 서비스의 현재 상태를 확인하고, 시작/중지/재시작할 수 있습니다.
 
 ## Config
 
-<img src="../assets/config.png" alt="Config" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/config.png" alt="Config" width="750" />
 
 Config 탭에서 감시할 디렉토리를 관리합니다. 각 경로의 액션(`watch` 또는 `ignore`), 모드(`recursive` 또는 `children`), 유효성 상태를 확인할 수 있습니다.
 
 ## Logs
 
-<img src="../assets/logs.png" alt="Logs" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/logs.png" alt="Logs" width="750" />
 
 Logs 탭에서 과거 watcher 로그를 조회하거나 실시간으로 확인할 수 있습니다. 로그는 macOS 시스템 로그에 기록되며, 보관 기간은 OS가 관리합니다.
 
 ## Browser
 
-<img src="../assets/browser.png" alt="Browser" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/browser.png" alt="Browser" width="750" />
 
 Browser 탭에서 파일과 디렉토리의 정규화 형식(NFD/NFC)을 확인하고 직접 변환할 수 있습니다. Watcher는 새로 생성/수정된 파일만 감지하므로, 기존 NFD 파일명은 이 탭에서 변환하세요.
 

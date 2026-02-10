@@ -34,25 +34,25 @@ macOS stores filenames in NFD, while Windows and Linux use NFC. This mismatch ca
 
 ## Home
 
-<img src="assets/home.png" alt="Home" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/home.png" alt="Home" width="750" />
 
 The Home tab displays the current watcher service status and provides controls to start, stop, or restart it.
 
 ## Config
 
-<img src="assets/config.png" alt="Config" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/config.png" alt="Config" width="750" />
 
 The Config tab manages which directories the watcher monitors. Each path entry has an action (`watch` or `ignore`), mode (`recursive` or `children`), and validation status.
 
 ## Logs
 
-<img src="assets/logs.png" alt="Logs" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/logs.png" alt="Logs" width="750" />
 
 The Logs tab lets you browse past watcher logs and follow new entries in real time. Logs are stored in macOS system logs, and retention is managed by the OS.
 
 ## Browser
 
-<img src="assets/browser.png" alt="Browser" width="750" />
+<img src="https://github.com/elgar328/nfd2nfc/releases/download/assets/browser.png" alt="Browser" width="750" />
 
 The Browser tab lets you inspect files and directories for their Unicode normalization form and convert them directly. The watcher only picks up newly created or modified files, so use this tab to convert any existing NFD names.
 

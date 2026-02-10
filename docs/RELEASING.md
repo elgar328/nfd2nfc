@@ -56,6 +56,19 @@ The `release.yml` workflow runs automatically when a `v*` tag is pushed. It perf
 - [ ] Verify the Homebrew tap was updated: `brew update && brew info elgar328/nfd2nfc/nfd2nfc`
 - [ ] Confirm installation works: `brew upgrade nfd2nfc` or `brew install elgar328/nfd2nfc/nfd2nfc`
 
+## Updating Screenshots
+
+Screenshots are hosted as GitHub Release assets (not tracked in git).
+Local working files are in the `assets/` directory (gitignored).
+
+```bash
+# Update specific images (overwrites existing)
+gh release upload assets assets/home.png assets/config.png --clobber
+
+# Or update all screenshots at once
+gh release upload assets assets/*.png --clobber
+```
+
 ## Release Artifacts
 
 - **Tarball**: `nfd2nfc-{VERSION}-universal-apple-darwin.tar.gz` (contains `nfd2nfc` and `nfd2nfc-watcher` universal binaries)
