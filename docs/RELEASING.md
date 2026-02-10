@@ -27,7 +27,42 @@ git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-### 3. Set the next dev version
+### 3. Write release notes
+
+After the automated pipeline creates the GitHub Release, update the auto-generated release notes.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Available sections:
+
+- **Added** — new features
+- **Changed** — changes in existing functionality (improvements, refactoring, docs, etc.)
+- **Deprecated** — soon-to-be removed features
+- **Removed** — removed features
+- **Fixed** — bug fixes
+- **Security** — vulnerability fixes
+
+Omit sections with no entries. Additional notes (e.g., git history rewrite warnings) can be written outside the sections.
+
+```bash
+gh release edit vX.Y.Z --notes "$(cat <<'EOF'
+## What's Changed
+
+### Added
+- ...
+
+### Changed
+- ...
+
+### Fixed
+- ...
+
+**Full Changelog**: https://github.com/elgar328/nfd2nfc/compare/vPREV...vX.Y.Z
+EOF
+)"
+```
+
+See [v2.0.2](https://github.com/elgar328/nfd2nfc/releases/tag/v2.0.2) for an example.
+
+### 4. Set the next dev version
 
 Bump to the next development version:
 
@@ -52,7 +87,7 @@ The `release.yml` workflow runs automatically when a `v*` tag is pushed. It perf
 ## Post-release Checklist
 
 - [ ] Verify the [GitHub Release](https://github.com/elgar328/nfd2nfc/releases) was created with the correct tarball
-- [ ] Edit the release notes on GitHub if needed (auto-generated notes may need refinement)
+- [ ] Write release notes (Step 3) and verify with `gh release view vX.Y.Z`
 - [ ] Verify the Homebrew tap was updated: `brew update && brew info elgar328/nfd2nfc/nfd2nfc`
 - [ ] Confirm installation works: `brew upgrade nfd2nfc` or `brew install elgar328/nfd2nfc/nfd2nfc`
 
