@@ -84,7 +84,7 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 2. Open **System Settings → Privacy & Security → Full Disk Access**
 3. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
 
-> **Note — macOS Tahoe 26.1–26.2 bug:** These versions have a [known issue](https://github.com/garethgeorge/backrest/issues/986) where CLI binaries cannot be added to Full Disk Access through System Settings. A fix has been [reported](https://github.com/garethgeorge/backrest/issues/986#issuecomment-2889498423) in macOS 26.3 beta.
+> **Note — macOS Tahoe (26.x) bug:** macOS Tahoe has [known issues](https://github.com/garethgeorge/backrest/issues/986) with granting Full Disk Access to CLI binaries. On 26.2, binaries cannot be added to the Full Disk Access list. On 26.3, binaries can be added but the permission does not take effect. Until Apple resolves this, the watcher may repeatedly prompt for folder access.
 
 ## Upgrading from v1
 

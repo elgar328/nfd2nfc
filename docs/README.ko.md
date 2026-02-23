@@ -84,7 +84,7 @@ Watcher가 파일을 변환할 때 macOS가 폴더 접근 권한을 반복적으
 2. **시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한** 열기
 3. `+` 클릭 → `Cmd+Shift+G`를 눌러 1단계의 경로를 입력하고 추가
 
-> **참고 — macOS Tahoe 26.1–26.2 버그:** 해당 버전에서는 CLI 바이너리를 전체 디스크 접근 권한에 추가할 수 없는 [알려진 문제](https://github.com/garethgeorge/backrest/issues/986)가 있습니다. macOS 26.3 베타에서 [수정된 것으로 보고](https://github.com/garethgeorge/backrest/issues/986#issuecomment-2889498423)되었습니다.
+> **참고 — macOS Tahoe (26.x) 버그:** macOS Tahoe에서는 CLI 바이너리에 전체 디스크 접근 권한을 부여하는 데 [알려진 문제](https://github.com/garethgeorge/backrest/issues/986)가 있습니다. 26.2에서는 전체 디스크 접근 권한 목록에 추가할 수 없고, 26.3에서는 추가는 되지만 권한이 실제로 적용되지 않습니다. Apple이 이 문제를 해결하기 전까지 watcher가 폴더 접근 권한을 반복적으로 요청할 수 있습니다.
 
 ## v1 사용자 안내
 
