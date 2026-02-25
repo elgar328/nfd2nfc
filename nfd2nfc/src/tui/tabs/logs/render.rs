@@ -1,10 +1,10 @@
 use crossterm::event::KeyCode;
 use ratatui::{
+    Frame,
     layout::{Alignment, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
-    Frame,
 };
 
 /// Timestamp column width: "01-21 11:23:45" (14) + "  " (2)
@@ -12,7 +12,7 @@ const TIMESTAMP_COL_WIDTH: usize = 16;
 
 use crate::tui::app::events::MouseState;
 use crate::tui::component::SharedState;
-use crate::tui::shortcuts::{gap, shortcut, space, ShortcutBlock};
+use crate::tui::shortcuts::{ShortcutBlock, gap, shortcut, space};
 use crate::tui::styles::{key_style, label_style};
 use crate::tui::tabs::logs::state::{LogsState, MAX_LOG_ENTRIES};
 

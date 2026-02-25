@@ -9,7 +9,7 @@ use std::os::fd::AsRawFd;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
-use unicode_normalization::{is_nfc, is_nfd, UnicodeNormalization};
+use unicode_normalization::{UnicodeNormalization, is_nfc, is_nfd};
 
 /// Target normalization form for filename conversion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

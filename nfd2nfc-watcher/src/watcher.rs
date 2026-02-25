@@ -95,12 +95,11 @@ fn spawn_heartbeat_task() {
         let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
         loop {
             interval.tick().await;
-            if let Err(e) = std::fs::write(&*HEARTBEAT_PATH, "") {
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    if let Some(dir) = &heartbeat_dir {
-                        let _ = std::fs::create_dir_all(dir);
-                    }
-                }
+            if let Err(e) = std::fs::write(&*HEARTBEAT_PATH, "")
+                && e.kind() == std::io::ErrorKind::NotFound
+                && let Some(dir) = &heartbeat_dir
+            {
+                let _ = std::fs::create_dir_all(dir);
             }
         }
     });

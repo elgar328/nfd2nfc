@@ -1,10 +1,10 @@
 use crossterm::event::KeyCode;
 use ratatui::{
+    Frame,
     layout::{Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, Wrap},
-    Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -18,7 +18,7 @@ const CONFIG_TABLE_WIDTHS: [ratatui::layout::Constraint; 5] = [
 
 use crate::tui::app::events::MouseState;
 use crate::tui::component::SharedState;
-use crate::tui::shortcuts::{gap, space, ShortcutBlock};
+use crate::tui::shortcuts::{ShortcutBlock, gap, space};
 use crate::tui::styles::{key_style, label_style};
 use crate::tui::tabs::config::modal::render::render_add_modal;
 use crate::tui::tabs::config::state::ConfigState;
@@ -36,7 +36,9 @@ fn path_description(idx: usize, entries: &[PathEntry]) -> String {
                 (PathAction::Watch, PathMode::Children) => {
                     "Watches for changes and auto-converts NFD names to NFC in this directory only, not subdirectories."
                 }
-                (PathAction::Ignore, _) => "Excludes this directory and all subdirectories from watching.",
+                (PathAction::Ignore, _) => {
+                    "Excludes this directory and all subdirectories from watching."
+                }
             };
             if let Some(p) = entry.overrides {
                 format!("Overrides #{}. {}", p + 1, desc)

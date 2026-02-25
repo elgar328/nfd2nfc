@@ -1,5 +1,5 @@
 use log::{error, info};
-use nfd2nfc_core::normalizer::{get_actual_file_name, NormalizationTarget};
+use nfd2nfc_core::normalizer::{NormalizationTarget, get_actual_file_name};
 use nfd2nfc_core::utils::abbreviate_home_path;
 use notify::Event;
 

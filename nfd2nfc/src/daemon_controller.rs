@@ -1,4 +1,4 @@
-use nfd2nfc_core::constants::{plist_path, HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, PLIST_PATH};
+use nfd2nfc_core::constants::{HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, PLIST_PATH, plist_path};
 use std::process::Command;
 use std::time::Duration;
 

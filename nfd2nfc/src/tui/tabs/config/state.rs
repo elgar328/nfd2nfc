@@ -3,12 +3,12 @@ use std::time::Duration;
 
 use ratatui::widgets::TableState;
 
-use nfd2nfc_core::config::{load_config, Config, PathAction, PathEntry, PathMode};
+use nfd2nfc_core::config::{Config, PathAction, PathEntry, PathMode, load_config};
 use nfd2nfc_core::constants::CONFIG_PATH;
 
-use crate::tui::component::{next_index, prev_index, SharedState};
-use crate::tui::tabs::config::modal::state::AddModalState;
+use crate::tui::component::{SharedState, next_index, prev_index};
 use crate::tui::tabs::Tab;
+use crate::tui::tabs::config::modal::state::AddModalState;
 use crate::tui::tick_timer::TickTimer;
 
 const STATUS_REFRESH_INTERVAL: Duration = Duration::from_millis(500);
@@ -60,14 +60,13 @@ impl ConfigState {
     }
 
     fn move_item(&mut self, offset: isize) {
-        if let Some(i) = self.table_state.selected() {
-            if let Some(new_i) = i.checked_add_signed(offset) {
-                if new_i < self.config.paths.len() {
-                    self.config.paths.swap(i, new_i);
-                    self.table_state.select(Some(new_i));
-                    self.mark_changed();
-                }
-            }
+        if let Some(i) = self.table_state.selected()
+            && let Some(new_i) = i.checked_add_signed(offset)
+            && new_i < self.config.paths.len()
+        {
+            self.config.paths.swap(i, new_i);
+            self.table_state.select(Some(new_i));
+            self.mark_changed();
         }
     }
 
@@ -120,10 +119,10 @@ impl ConfigState {
         let selected = self.table_state.selected();
         let (config, _) = load_config();
         *self = Self::from_config(config);
-        if let Some(i) = selected {
-            if i < self.config.paths.len() {
-                self.table_state.select(Some(i));
-            }
+        if let Some(i) = selected
+            && i < self.config.paths.len()
+        {
+            self.table_state.select(Some(i));
         }
     }
 
@@ -136,10 +135,10 @@ impl ConfigState {
             .selected()
             .map(|i| self.config.paths[i].raw.clone());
         self.config.paths.sort_by(|a, b| a.raw.cmp(&b.raw));
-        if let Some(raw) = selected_raw {
-            if let Some(new_idx) = self.config.paths.iter().position(|p| p.raw == raw) {
-                self.table_state.select(Some(new_idx));
-            }
+        if let Some(raw) = selected_raw
+            && let Some(new_idx) = self.config.paths.iter().position(|p| p.raw == raw)
+        {
+            self.table_state.select(Some(new_idx));
         }
         self.mark_changed();
     }

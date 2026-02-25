@@ -1,7 +1,7 @@
 use crate::tui::app::events::MouseState;
 use crate::tui::dir_browser::SelectionKind;
 use crate::tui::shortcuts::{
-    gap, nav_arrows, render_centered_options, shortcut_bracketed, space, ShortcutBlock,
+    ShortcutBlock, gap, nav_arrows, render_centered_options, shortcut_bracketed, space,
 };
 use crate::tui::styles::{
     active_value_style, inactive_italic_style, inactive_style, key_style, label_style,
@@ -12,11 +12,11 @@ use crossterm::event::KeyCode;
 use nfd2nfc_core::config::PathAction;
 use nfd2nfc_core::utils::abbreviate_home;
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
-    Frame,
 };
 
 pub fn render_add_modal(
@@ -138,10 +138,10 @@ pub fn render_add_modal(
 
     let mut adjusted_state = ratatui::widgets::ListState::default();
     *adjusted_state.offset_mut() = modal.browser.render_offset;
-    if let Some(selected_entry_idx) = modal.browser.list_state.selected() {
-        if let Some(pos) = dir_indices.iter().position(|&i| i == selected_entry_idx) {
-            adjusted_state.select(Some(pos));
-        }
+    if let Some(selected_entry_idx) = modal.browser.list_state.selected()
+        && let Some(pos) = dir_indices.iter().position(|&i| i == selected_entry_idx)
+    {
+        adjusted_state.select(Some(pos));
     }
 
     f.render_stateful_widget(list, chunks[1], &mut adjusted_state);

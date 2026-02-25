@@ -4,8 +4,8 @@ use nfd2nfc_core::config::load_config;
 use nfd2nfc_core::constants::HEARTBEAT_CHECK_INTERVAL;
 
 use crate::daemon_controller;
-use crate::tui::app::events::process_action;
 use crate::tui::app::events::MouseState;
+use crate::tui::app::events::process_action;
 use crate::tui::component::{SharedState, TabComponent};
 use crate::tui::tabs::{BrowserState, ConfigState, HomeState, LogsState, Tab};
 use crate::tui::tick_timer::TickTimer;
@@ -109,19 +109,19 @@ impl App {
         self.toast.tick();
 
         // Check for async operation completion
-        if let Some(ref op) = self.async_operation {
-            if let Ok(result) = op.result_rx.try_recv() {
-                match result {
-                    Ok(()) => {
-                        self.watcher_running = op.kind.success_state();
-                        self.show_toast(format!("Watcher {}", op.kind.past_tense()), false);
-                    }
-                    Err(e) => {
-                        self.show_toast(format!("Failed to {}: {}", op.kind.verb(), e), true);
-                    }
+        if let Some(ref op) = self.async_operation
+            && let Ok(result) = op.result_rx.try_recv()
+        {
+            match result {
+                Ok(()) => {
+                    self.watcher_running = op.kind.success_state();
+                    self.show_toast(format!("Watcher {}", op.kind.past_tense()), false);
                 }
-                self.async_operation = None;
+                Err(e) => {
+                    self.show_toast(format!("Failed to {}: {}", op.kind.verb(), e), true);
+                }
             }
+            self.async_operation = None;
         }
 
         // Update watcher status only when no operation is pending, throttled to 1s interval

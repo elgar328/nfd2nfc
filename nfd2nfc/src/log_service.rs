@@ -74,7 +74,7 @@ pub fn extract_log_entry(line: &str) -> Option<LogEntry> {
         if parts.len() >= 2 {
             let date_part = parts[0]; // "2026-01-21"
             let time_part = parts[1].split('.').next().unwrap_or(""); // "11:23:45"
-                                                                      // Extract MM-DD and HH:MM:SS
+            // Extract MM-DD and HH:MM:SS
             let date_short = date_part.get(5..).unwrap_or(date_part); // "01-21"
             format!("{} {}", date_short, time_part)
         } else {
@@ -133,10 +133,10 @@ pub fn stream_logs(tx: Sender<LogEvent>) {
     let reader = BufReader::new(stdout);
 
     for line in reader.lines().map_while(Result::ok) {
-        if let Some(entry) = extract_log_entry(&line) {
-            if tx.send(LogEvent::Live(entry)).is_err() {
-                break;
-            }
+        if let Some(entry) = extract_log_entry(&line)
+            && tx.send(LogEvent::Live(entry)).is_err()
+        {
+            break;
         }
     }
     let _ = child.wait();

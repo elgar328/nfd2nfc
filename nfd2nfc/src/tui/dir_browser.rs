@@ -331,10 +331,10 @@ impl DirBrowser {
         let selected_path = self.selected_entry().map(|e| e.path.clone());
         self.show_hidden = !self.show_hidden;
         self.refresh();
-        if let Some(path) = selected_path {
-            if let Some(idx) = self.entries.iter().position(|e| e.path == path) {
-                self.list_state.select(Some(idx));
-            }
+        if let Some(path) = selected_path
+            && let Some(idx) = self.entries.iter().position(|e| e.path == path)
+        {
+            self.list_state.select(Some(idx));
         }
     }
 }

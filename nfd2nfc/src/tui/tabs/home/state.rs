@@ -62,16 +62,16 @@ impl HomeState {
     }
 
     pub fn tick_version_check(&mut self) -> Option<Action> {
-        if let Some(ref rx) = self.version_rx {
-            if let Ok(result) = rx.try_recv() {
-                self.available_update = result;
-                self.version_rx = None;
-                if let Some(ver) = self.available_update.as_deref() {
-                    return Some(Action::ShowToast {
-                        message: format!("nfd2nfc v{ver} available"),
-                        is_error: false,
-                    });
-                }
+        if let Some(ref rx) = self.version_rx
+            && let Ok(result) = rx.try_recv()
+        {
+            self.available_update = result;
+            self.version_rx = None;
+            if let Some(ver) = self.available_update.as_deref() {
+                return Some(Action::ShowToast {
+                    message: format!("nfd2nfc v{ver} available"),
+                    is_error: false,
+                });
             }
         }
         None

@@ -1,15 +1,15 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 use strum::IntoEnumIterator;
 
 use crate::tui::app::state::App;
 use crate::tui::component::TabComponent;
-use crate::tui::styles::{bold_fg, border_style, key_style, watcher_status_span, StatusLabels};
+use crate::tui::styles::{StatusLabels, bold_fg, border_style, key_style, watcher_status_span};
 use crate::tui::tabs::Tab;
 
 pub struct AppLayout {

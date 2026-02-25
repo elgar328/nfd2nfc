@@ -3,7 +3,7 @@ mod watcher;
 use log::{debug, warn};
 use nfd2nfc_core::config;
 use nfd2nfc_core::constants::{HEARTBEAT_PATH, HOME_DIR};
-use nfd2nfc_core::logger::{init_logger, LogBackend};
+use nfd2nfc_core::logger::{LogBackend, init_logger};
 use once_cell::sync::Lazy;
 
 #[tokio::main]
@@ -25,10 +25,10 @@ async fn main() {
     let active = config.active_entries();
 
     // Initialize heartbeat: create directory and initial file
-    if let Some(parent) = HEARTBEAT_PATH.parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            warn!("Failed to create heartbeat directory: {}", e);
-        }
+    if let Some(parent) = HEARTBEAT_PATH.parent()
+        && let Err(e) = std::fs::create_dir_all(parent)
+    {
+        warn!("Failed to create heartbeat directory: {}", e);
     }
     if let Err(e) = std::fs::write(&*HEARTBEAT_PATH, "") {
         warn!("Failed to write initial heartbeat file: {}", e);

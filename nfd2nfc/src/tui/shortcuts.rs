@@ -1,9 +1,9 @@
 use crossterm::event::KeyCode;
 use ratatui::{
+    Frame,
     layout::{Alignment, Rect},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 use unicode_width::UnicodeWidthStr;
 

@@ -134,14 +134,14 @@ pub fn handle_modal_mouse_click(modal: &mut AddModalState, _x: u16, y: u16) -> O
 }
 
 pub fn handle_modal_double_click(modal: &mut AddModalState, _x: u16, y: u16) -> Option<Action> {
-    if let Some(index) = resolve_click_index(modal, y) {
-        if let Some(entry) = modal.browser.entries.get(index) {
-            if entry.is_parent {
-                modal.browser.go_parent();
-            } else if entry.is_dir {
-                let path = entry.path.clone();
-                modal.browser.enter_directory(&path);
-            }
+    if let Some(index) = resolve_click_index(modal, y)
+        && let Some(entry) = modal.browser.entries.get(index)
+    {
+        if entry.is_parent {
+            modal.browser.go_parent();
+        } else if entry.is_dir {
+            let path = entry.path.clone();
+            modal.browser.enter_directory(&path);
         }
     }
     None

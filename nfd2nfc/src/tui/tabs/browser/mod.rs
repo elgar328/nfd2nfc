@@ -5,8 +5,8 @@ pub mod state;
 pub use state::BrowserState;
 
 use crossterm::event::KeyCode;
-use ratatui::layout::Rect;
 use ratatui::Frame;
+use ratatui::layout::Rect;
 
 use crate::tui::app::events::MouseState;
 use crate::tui::component::{Action, ScrollDirection, SharedState, TabComponent};

@@ -1,16 +1,16 @@
 use crossterm::event::KeyCode;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Paragraph},
-    Frame,
 };
 
 use crate::tui::app::events::MouseState;
 use crate::tui::component::SharedState;
-use crate::tui::shortcuts::{gap, shortcut, shortcut_dimmed, space, ShortcutBlock};
-use crate::tui::styles::{dimmed_style, watcher_status_span, StatusLabels};
+use crate::tui::shortcuts::{ShortcutBlock, gap, shortcut, shortcut_dimmed, space};
+use crate::tui::styles::{StatusLabels, dimmed_style, watcher_status_span};
 use crate::tui::tabs::home::state::HomeState;
 
 const HOME_CONTENT_WIDTH: u16 = 46;

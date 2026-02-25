@@ -1,11 +1,11 @@
 use std::time::{Duration, Instant};
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Color, Style},
     text::Line,
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
-    Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -51,16 +51,15 @@ impl ToastState {
     }
 
     pub fn push(&mut self, message: String, level: ToastLevel) {
-        if self.toasts.len() >= MAX_TOASTS {
-            if let Some(toast) = self
+        if self.toasts.len() >= MAX_TOASTS
+            && let Some(toast) = self
                 .toasts
                 .iter_mut()
                 .find(|t| matches!(t.phase, ToastPhase::Display))
-            {
-                toast.phase = ToastPhase::SlideOut {
-                    started_at: Instant::now(),
-                };
-            }
+        {
+            toast.phase = ToastPhase::SlideOut {
+                started_at: Instant::now(),
+            };
         }
         self.toasts.push(Toast {
             message,

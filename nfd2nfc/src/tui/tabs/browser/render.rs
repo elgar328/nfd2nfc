@@ -1,10 +1,10 @@
 use crossterm::event::KeyCode;
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -13,7 +13,7 @@ use crate::tui::app::render::content_area;
 use crate::tui::component::SharedState;
 use crate::tui::dir_browser::{SelectionKind, UnicodeForm};
 use crate::tui::shortcuts::{
-    gap, nav_arrows, render_centered_options, shortcut, shortcut_bracketed, space, ShortcutBlock,
+    ShortcutBlock, gap, nav_arrows, render_centered_options, shortcut, shortcut_bracketed, space,
 };
 use crate::tui::styles::{
     active_value_style, inactive_italic_style, inactive_style, key_style, label_style,

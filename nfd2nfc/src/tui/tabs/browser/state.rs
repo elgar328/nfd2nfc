@@ -1,4 +1,4 @@
-use nfd2nfc_core::normalizer::{normalize_directory, normalize_single_file, NormalizationTarget};
+use nfd2nfc_core::normalizer::{NormalizationTarget, normalize_directory, normalize_single_file};
 
 use crate::tui::dir_browser::{DirBrowser, UnicodeForm};
 
@@ -95,13 +95,12 @@ impl BrowserState {
 
     /// Auto-switch from NameOnly to Children when an ASCII/Mixed folder is selected.
     pub fn auto_adjust_mode(&mut self) {
-        if let Some(entry) = self.dir_browser.selected_entry() {
-            if entry.is_dir
-                && self.mode == BrowserMode::NameOnly
-                && matches!(entry.form, UnicodeForm::ASCII | UnicodeForm::Mixed)
-            {
-                self.mode = BrowserMode::Children;
-            }
+        if let Some(entry) = self.dir_browser.selected_entry()
+            && entry.is_dir
+            && self.mode == BrowserMode::NameOnly
+            && matches!(entry.form, UnicodeForm::ASCII | UnicodeForm::Mixed)
+        {
+            self.mode = BrowserMode::Children;
         }
     }
 
