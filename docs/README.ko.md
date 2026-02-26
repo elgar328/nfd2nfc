@@ -6,11 +6,6 @@
 
 [![English](https://img.shields.io/badge/lang-English_↗-blue)](../README.md)
 
-> [!IMPORTANT]
-> **v2.0.3 업그레이드 안내:** [macOS Tahoe (26.x)의 전체 디스크 접근 권한 버그](https://developer.apple.com/forums/thread/806187)를 우회하기 위해 watcher가 `.app` 번들로 변경되었습니다. 업그레이드 후 다음 작업이 필요합니다:
-> 1. `brew services restart nfd2nfc` 실행하여 서비스 경로 갱신
-> 2. 새 `.app` 번들을 전체 디스크 접근 권한에 다시 추가 — [권한 설정](#권한-설정) 참고
-
 NFD 파일명을 실시간으로 감지해 NFC로 변환하는 macOS 도구입니다. 다른 OS와 파일을 주고받을 때 생기는 파일명 깨짐 문제를 해결합니다.
 
 ## NFD/NFC란?

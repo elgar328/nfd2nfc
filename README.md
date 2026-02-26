@@ -6,11 +6,6 @@
 
 [![한국어](https://img.shields.io/badge/lang-한국어_↗-blue)](docs/README.ko.md)
 
-> [!IMPORTANT]
-> **Upgrading to v2.0.3:** The watcher is now packaged as an `.app` bundle to work around a [macOS Tahoe (26.x) Full Disk Access bug](https://developer.apple.com/forums/thread/806187). After upgrading:
-> 1. Run `brew services restart nfd2nfc` to update the service path
-> 2. Re-add the new `.app` bundle to Full Disk Access — see [Permissions](#permissions) for details
-
 A macOS tool that watches directories and converts NFD filenames to NFC in real time, ensuring cross-platform compatibility.
 
 ## What is NFD/NFC?
