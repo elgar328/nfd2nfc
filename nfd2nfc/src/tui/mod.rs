@@ -19,8 +19,8 @@ use crate::daemon_controller;
 use app::App;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
-    // Ensure launchd plist is installed before starting TUI
-    daemon_controller::install_plist_if_missing()
+    // Ensure launchd plist is installed and up to date before starting TUI
+    daemon_controller::ensure_plist_up_to_date()
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
 
     // Setup terminal

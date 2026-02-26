@@ -45,28 +45,52 @@ fn is_plist_installed() -> bool {
     plist_path().exists()
 }
 
-/// Register the service via `brew services start nfd2nfc` if the plist is not installed.
-pub fn install_plist_if_missing() -> Result<(), String> {
-    if is_plist_installed() {
+/// Check if the current binary is newer than the installed plist.
+fn is_plist_stale() -> bool {
+    let exe_mtime = std::env::current_exe()
+        .and_then(std::fs::metadata)
+        .and_then(|m| m.modified())
+        .ok();
+    let plist_mtime = std::fs::metadata(&*PLIST_PATH)
+        .and_then(|m| m.modified())
+        .ok();
+
+    match (exe_mtime, plist_mtime) {
+        (Some(exe), Some(plist)) => exe > plist,
+        _ => false,
+    }
+}
+
+fn run_brew_services(subcommand: &str) -> Result<(), String> {
+    let status = Command::new("brew")
+        .args(["services", subcommand, "nfd2nfc"])
+        .status()
+        .map_err(|e| format!("Failed to run brew command: {e}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("brew services {subcommand} failed: {status}"))
+    }
+}
+
+/// Ensure the plist is installed and up to date.
+/// - If missing: run `brew services start nfd2nfc`
+/// - If stale (binary newer than plist): run `brew services restart nfd2nfc`
+pub fn ensure_plist_up_to_date() -> Result<(), String> {
+    if !is_plist_installed() {
+        println!("Service not registered. Running 'brew services start nfd2nfc'...");
+        run_brew_services("start")?;
+        println!("Service registered successfully.");
         return Ok(());
     }
 
-    println!("Service not registered. Running 'brew services start nfd2nfc'...");
-
-    let status = Command::new("brew")
-        .args(["services", "start", "nfd2nfc"])
-        .status()
-        .map_err(|e| format!("Failed to run brew command: {}", e))?;
-
-    if status.success() {
-        println!("Service registered successfully.");
-        Ok(())
-    } else {
-        Err(format!(
-            "Failed to register service (exit code: {})",
-            status
-        ))
+    if is_plist_stale() {
+        println!("Upgrade detected. Running 'brew services restart nfd2nfc'...");
+        run_brew_services("restart")?;
+        println!("Service restarted with updated configuration.");
     }
+
+    Ok(())
 }
 
 /// Check if the watcher is running by verifying heartbeat file mtime is recent.
