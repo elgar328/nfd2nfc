@@ -9,11 +9,11 @@ class Nfd2nfc < Formula
 
   def install
     bin.install "nfd2nfc"
-    bin.install "nfd2nfc-watcher"
+    prefix.install "nfd2nfc-watcher.app"
   end
 
   service do
-    run [opt_bin/"nfd2nfc-watcher"]
+    run [opt_prefix/"nfd2nfc-watcher.app/Contents/MacOS/nfd2nfc-watcher"]
     keep_alive crashed: true
     run_type :immediate
     working_dir HOMEBREW_PREFIX

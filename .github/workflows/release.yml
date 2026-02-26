@@ -63,22 +63,31 @@ jobs:
           lipo -create \
             artifacts/nfd2nfc-watcher-x86_64-apple-darwin/nfd2nfc-watcher \
             artifacts/nfd2nfc-watcher-aarch64-apple-darwin/nfd2nfc-watcher \
-            -output universal/nfd2nfc-watcher
-          chmod +x universal/nfd2nfc universal/nfd2nfc-watcher
+            -output universal/nfd2nfc-watcher-bin
+          chmod +x universal/nfd2nfc universal/nfd2nfc-watcher-bin
+
+      - name: Assemble .app bundle
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          APP_DIR="universal/nfd2nfc-watcher.app/Contents"
+          mkdir -p "${APP_DIR}/MacOS"
+          mv universal/nfd2nfc-watcher-bin "${APP_DIR}/MacOS/nfd2nfc-watcher"
+          cp .github/app-template/Info.plist "${APP_DIR}/Info.plist"
+          sed -i '' "s|PLACEHOLDER_VERSION|${VERSION}|g" "${APP_DIR}/Info.plist"
 
       - name: Verify universal binaries
         run: |
           file universal/nfd2nfc
-          file universal/nfd2nfc-watcher
+          file "universal/nfd2nfc-watcher.app/Contents/MacOS/nfd2nfc-watcher"
           lipo -info universal/nfd2nfc
-          lipo -info universal/nfd2nfc-watcher
+          lipo -info "universal/nfd2nfc-watcher.app/Contents/MacOS/nfd2nfc-watcher"
 
       - name: Package tarball
         id: package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           ARCHIVE="nfd2nfc-${VERSION}-universal-apple-darwin.tar.gz"
-          tar -czf "$ARCHIVE" -C universal nfd2nfc nfd2nfc-watcher
+          tar -czf "$ARCHIVE" -C universal nfd2nfc nfd2nfc-watcher.app
           SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"

@@ -78,13 +78,13 @@ nfd2nfc
 
 ### 권한 설정
 
-Watcher가 파일을 변환할 때 macOS가 폴더 접근 권한을 반복적으로 요청한다면, watcher 바이너리에 **전체 디스크 접근 권한**을 부여하세요:
+Watcher가 파일을 변환할 때 macOS가 폴더 접근 권한을 반복적으로 요청한다면, watcher 앱에 **전체 디스크 접근 권한**을 부여하세요:
 
-1. `which nfd2nfc-watcher`를 실행하여 바이너리 경로 확인
+1. `brew --prefix nfd2nfc`를 실행하여 설치 경로 확인
 2. **시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한** 열기
-3. `+` 클릭 → `Cmd+Shift+G`를 눌러 1단계의 경로를 입력하고 추가
+3. `+` 클릭 → `Cmd+Shift+G`를 눌러 `<경로>/nfd2nfc-watcher.app`을 입력하고 추가
 
-> **참고 — macOS Tahoe (26.x) 버그:** macOS Tahoe에서는 CLI 바이너리에 전체 디스크 접근 권한을 부여하는 데 [알려진 문제](https://github.com/garethgeorge/backrest/issues/986)가 있습니다. 26.2에서는 전체 디스크 접근 권한 목록에 추가할 수 없고, 26.3에서는 추가는 되지만 권한이 실제로 적용되지 않습니다. Apple이 이 문제를 해결하기 전까지 watcher가 폴더 접근 권한을 반복적으로 요청할 수 있습니다.
+> **참고:** Watcher는 일반 CLI 바이너리에 전체 디스크 접근 권한이 정상 작동하지 않는 [macOS Tahoe (26.x) 버그](https://developer.apple.com/forums/thread/806187)를 우회하기 위해 임시로 `.app` 번들로 패키징되어 있습니다. Apple이 문제를 수정하면 이 조치는 원래대로 되돌릴 예정입니다.
 
 ## v1 사용자 안내
 

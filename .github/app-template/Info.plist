@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>io.github.elgar328.nfd2nfc-watcher</string>
+    <key>CFBundleName</key>
+    <string>nfd2nfc-watcher</string>
+    <key>CFBundleExecutable</key>
+    <string>nfd2nfc-watcher</string>
+    <key>CFBundleVersion</key>
+    <string>PLACEHOLDER_VERSION</string>
+    <key>CFBundleShortVersionString</key>
+    <string>PLACEHOLDER_VERSION</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSBackgroundOnly</key>
+    <true/>
+    <key>LSUIElement</key>
+    <true/>
+</dict>
+</plist>
