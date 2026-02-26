@@ -2,9 +2,32 @@ use std::sync::mpsc::{self, Receiver};
 
 use crate::tui::component::Action;
 
+/// Fetch the latest tap metadata so `brew info` reflects the newest formula.
+/// Silently ignores all errors (offline, missing tap, etc.).
+fn update_tap() {
+    let output = std::process::Command::new("brew")
+        .args(["--repository", "elgar328/nfd2nfc"])
+        .output()
+        .ok();
+
+    let path = match output {
+        Some(ref o) if o.status.success() => String::from_utf8_lossy(&o.stdout).trim().to_string(),
+        _ => return,
+    };
+
+    let _ = std::process::Command::new("git")
+        .args(["-C", &path, "fetch", "--quiet", "origin"])
+        .output();
+
+    let _ = std::process::Command::new("git")
+        .args(["-C", &path, "reset", "--hard", "origin/main", "--quiet"])
+        .output();
+}
+
 /// Check Homebrew for a newer version of nfd2nfc.
 /// Returns `Some(latest_version)` if a newer version exists, `None` otherwise.
 fn check_brew_update() -> Option<String> {
+    update_tap();
     let output = std::process::Command::new("brew")
         .args(["info", "--json=v2", "nfd2nfc"])
         .output()
