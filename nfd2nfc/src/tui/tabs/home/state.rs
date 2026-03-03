@@ -2,26 +2,16 @@ use std::sync::mpsc::{self, Receiver};
 
 use crate::tui::component::Action;
 
-/// Check Homebrew for a newer version of nfd2nfc.
+/// Check GitHub Releases for a newer version of nfd2nfc.
 /// Returns `Some(latest_version)` if a newer version exists, `None` otherwise.
-fn check_brew_update() -> Option<String> {
-    let output = std::process::Command::new("brew")
-        .args(["info", "--json=v2", "nfd2nfc"])
-        .output()
+fn check_latest_version() -> Option<String> {
+    let resp = ureq::get("https://api.github.com/repos/elgar328/nfd2nfc/releases/latest")
+        .header("User-Agent", "nfd2nfc")
+        .call()
         .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout).ok()?;
-    let latest = json
-        .get("formulae")?
-        .get(0)?
-        .get("versions")?
-        .get("stable")?
-        .as_str()?;
-
+    let json: serde_json::Value = resp.into_body().read_json().ok()?;
+    let tag = json.get("tag_name")?.as_str()?;
+    let latest = tag.strip_prefix('v').unwrap_or(tag);
     let current = env!("CARGO_PKG_VERSION").trim_end_matches("-dev");
 
     if is_newer(latest, current) {
@@ -53,7 +43,7 @@ impl HomeState {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
-            let _ = tx.send(check_brew_update());
+            let _ = tx.send(check_latest_version());
         });
         Self {
             available_update: None,
