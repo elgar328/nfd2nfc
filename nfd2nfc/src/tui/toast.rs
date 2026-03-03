@@ -10,6 +10,7 @@ use ratatui::{
 use unicode_width::UnicodeWidthStr;
 
 const DISPLAY_DURATION: Duration = Duration::from_secs(3);
+const ERROR_DISPLAY_DURATION: Duration = Duration::from_secs(6);
 const SLIDE_PX_PER_SEC: f64 = 80.0;
 const MAX_TOASTS: usize = 5;
 
@@ -71,8 +72,11 @@ impl ToastState {
 
     pub fn tick(&mut self) {
         for toast in &mut self.toasts {
-            if toast.phase == ToastPhase::Display && toast.created_at.elapsed() >= DISPLAY_DURATION
-            {
+            let duration = match toast.level {
+                ToastLevel::Error => ERROR_DISPLAY_DURATION,
+                ToastLevel::Success => DISPLAY_DURATION,
+            };
+            if toast.phase == ToastPhase::Display && toast.created_at.elapsed() >= duration {
                 toast.phase = ToastPhase::SlideOut {
                     started_at: Instant::now(),
                 };
@@ -81,7 +85,7 @@ impl ToastState {
 
         // Remove toasts that have slid off screen
         let cols = crossterm::terminal::size().map(|(c, _)| c).unwrap_or(80);
-        let max_width = (cols as u32 * 40 / 100).max(20) as u16;
+        let max_width = (cols as u32 / 2).max(20) as u16;
         self.toasts.retain(|toast| {
             if let ToastPhase::SlideOut { started_at } = toast.phase {
                 slide_offset(started_at) <= max_width + 1
@@ -96,7 +100,7 @@ impl ToastState {
             return;
         }
 
-        let max_width = (content_area.width as u32 * 40 / 100).max(20) as u16;
+        let max_width = (content_area.width as u32 / 2).max(20) as u16;
         let inner_width = max_width.saturating_sub(2); // border left + right
         let mut current_y = content_area.y + 2;
 
