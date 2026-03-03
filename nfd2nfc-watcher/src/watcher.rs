@@ -1,7 +1,7 @@
 use crate::handler;
 use log::{debug, error, info};
 use nfd2nfc_core::config::{ActiveEntry, PathAction, PathMode};
-use nfd2nfc_core::constants::{HEARTBEAT_INTERVAL, HEARTBEAT_PATH};
+use nfd2nfc_core::constants::{HEARTBEAT_INTERVAL, HEARTBEAT_PATH, PLIST_PATH};
 use nfd2nfc_core::normalizer::NormalizationTarget;
 use notify::{Error as NotifyError, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
@@ -89,12 +89,26 @@ fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count
 }
 
 /// Spawn a background task that writes to the heartbeat file at a regular interval.
+/// Also checks if the watcher binary still exists; if removed (e.g. brew uninstall),
+/// cleans up the plist and exits gracefully.
 fn spawn_heartbeat_task() {
     let heartbeat_dir = HEARTBEAT_PATH.parent().map(Path::to_path_buf);
+    let exe_path = std::env::current_exe().ok();
     spawn(async move {
         let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
         loop {
             interval.tick().await;
+
+            // Check if our binary still exists on disk.
+            if let Some(ref path) = exe_path
+                && !path.exists()
+            {
+                info!("Binary removed. Cleaning up plist and exiting.");
+                let _ = std::fs::remove_file(&*PLIST_PATH);
+                let _ = std::fs::remove_file(&*HEARTBEAT_PATH);
+                std::process::exit(0);
+            }
+
             if let Err(e) = std::fs::write(&*HEARTBEAT_PATH, "")
                 && e.kind() == std::io::ErrorKind::NotFound
                 && let Some(dir) = &heartbeat_dir

@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use std::path::PathBuf;
 use std::process;
 
-pub const NFD2NFC_SERVICE_LABEL: &str = "homebrew.mxcl.nfd2nfc";
+pub const NFD2NFC_SERVICE_LABEL: &str = "io.github.elgar328.nfd2nfc";
 
 /// Base heartbeat interval in milliseconds. All other heartbeat timing constants are derived from this.
 const HEARTBEAT_BASE_MS: u64 = 500;
@@ -36,18 +36,16 @@ pub static HOME_DIR: Lazy<PathBuf> = Lazy::new(|| match dirs::home_dir() {
     }
 });
 
-pub fn plist_path() -> PathBuf {
+/// Plist path for the current service label.
+pub static PLIST_PATH: Lazy<PathBuf> = Lazy::new(|| {
     HOME_DIR
         .join("Library/LaunchAgents")
         .join(format!("{}.plist", NFD2NFC_SERVICE_LABEL))
-}
+});
 
-/// Plist path (exits with error if not found).
-pub static PLIST_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = plist_path();
-    if !path.exists() {
-        error!("Plist file not found. Please run 'brew services start nfd2nfc'.");
-        process::exit(1);
-    }
-    path
+/// Legacy plist path for migration from Homebrew-managed service.
+pub static LEGACY_PLIST_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    HOME_DIR
+        .join("Library/LaunchAgents")
+        .join("homebrew.mxcl.nfd2nfc.plist")
 });

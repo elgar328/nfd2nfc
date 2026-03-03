@@ -1,11 +1,17 @@
-use nfd2nfc_core::constants::{HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, PLIST_PATH, plist_path};
+use nfd2nfc_core::constants::{
+    HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, LEGACY_PLIST_PATH, NFD2NFC_SERVICE_LABEL, PLIST_PATH,
+};
 use std::process::Command;
 use std::time::Duration;
 
-fn run_launchctl(subcommand: &str, action_desc: &str) -> Result<(), String> {
+fn run_launchctl(
+    subcommand: &str,
+    plist: &std::path::Path,
+    action_desc: &str,
+) -> Result<(), String> {
     let status = Command::new("launchctl")
         .args([subcommand, "-w"])
-        .arg(&*PLIST_PATH)
+        .arg(plist)
         .status()
         .map_err(|e| format!("Failed to {action_desc}: {e}"))?;
     if !status.success() {
@@ -15,7 +21,7 @@ fn run_launchctl(subcommand: &str, action_desc: &str) -> Result<(), String> {
 }
 
 fn launch_watcher_and_confirm() -> Result<(), String> {
-    run_launchctl("load", "start watcher")?;
+    run_launchctl("load", &PLIST_PATH, "start watcher")?;
 
     // Wait for heartbeat file to be created/updated (max 5 seconds).
     for _ in 0..250 {
@@ -29,7 +35,7 @@ fn launch_watcher_and_confirm() -> Result<(), String> {
 }
 
 fn unload_watcher_service() -> Result<(), String> {
-    run_launchctl("unload", "stop service")
+    run_launchctl("unload", &PLIST_PATH, "stop service")
 }
 
 /// Check if heartbeat file exists and was modified within max_age.
@@ -42,7 +48,7 @@ fn check_heartbeat_fresh(max_age: Duration) -> bool {
 
 /// Check if plist file exists.
 fn is_plist_installed() -> bool {
-    plist_path().exists()
+    PLIST_PATH.exists()
 }
 
 /// Check if the current binary is newer than the installed plist.
@@ -61,34 +67,100 @@ fn is_plist_stale() -> bool {
     }
 }
 
-fn run_brew_services(subcommand: &str) -> Result<(), String> {
-    let status = Command::new("brew")
-        .args(["services", subcommand, "nfd2nfc"])
-        .status()
-        .map_err(|e| format!("Failed to run brew command: {e}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("brew services {subcommand} failed: {status}"))
+/// Find the watcher binary path as a sibling of the current executable.
+fn watcher_binary_path() -> Result<std::path::PathBuf, String> {
+    let exe = std::env::current_exe().map_err(|e| format!("Failed to get current exe: {e}"))?;
+    let dir = exe
+        .parent()
+        .ok_or_else(|| "Failed to get exe parent directory".to_string())?;
+    let watcher = dir.join("nfd2nfc-watcher");
+    if !watcher.exists() {
+        return Err(format!("Watcher binary not found: {}", watcher.display()));
     }
+    Ok(watcher)
+}
+
+/// Generate the launchd plist file for the watcher service.
+fn generate_plist() -> Result<(), String> {
+    let watcher_path = watcher_binary_path()?;
+    let plist_content = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{label}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{watcher}</string>
+    </array>
+    <key>KeepAlive</key>
+    <dict>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+"#,
+        label = NFD2NFC_SERVICE_LABEL,
+        watcher = watcher_path.display(),
+    );
+
+    // Ensure LaunchAgents directory exists.
+    if let Some(parent) = PLIST_PATH.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create LaunchAgents directory: {e}"))?;
+    }
+
+    std::fs::write(&*PLIST_PATH, plist_content)
+        .map_err(|e| format!("Failed to write plist: {e}"))?;
+
+    Ok(())
+}
+
+/// Migrate from the legacy Homebrew-managed plist to the new self-managed plist.
+fn migrate_legacy_plist() -> Result<bool, String> {
+    if !LEGACY_PLIST_PATH.exists() {
+        return Ok(false);
+    }
+
+    // Unload the legacy service (ignore errors — it may not be loaded).
+    let _ = run_launchctl("unload", &LEGACY_PLIST_PATH, "unload legacy service");
+
+    // Delete the legacy plist file.
+    let _ = std::fs::remove_file(&*LEGACY_PLIST_PATH);
+
+    // Generate new plist and load it.
+    generate_plist()?;
+    run_launchctl("load", &PLIST_PATH, "load migrated service")?;
+
+    Ok(true)
 }
 
 /// Ensure the plist is installed and up to date.
-/// - If missing: run `brew services start nfd2nfc`
-/// - If stale (binary newer than plist): run `brew services restart nfd2nfc`
+/// - Legacy plist exists: migrate to new label
+/// - Plist exists but stale (binary newer): regenerate and reload
+/// - Plist missing: generate and load (first install)
 pub fn ensure_plist_up_to_date() -> Result<(), String> {
-    if !is_plist_installed() {
-        println!("Service not registered. Running 'brew services start nfd2nfc'...");
-        run_brew_services("start")?;
-        println!("Service registered successfully.");
+    if migrate_legacy_plist()? {
         return Ok(());
     }
 
-    if is_plist_stale() {
-        println!("Upgrade detected. Running 'brew services restart nfd2nfc'...");
-        run_brew_services("restart")?;
-        println!("Service restarted with updated configuration.");
+    if is_plist_installed() {
+        if is_plist_stale() {
+            let _ = unload_watcher_service();
+            generate_plist()?;
+            run_launchctl("load", &PLIST_PATH, "reload updated service")?;
+        }
+        return Ok(());
     }
+
+    // Plist missing — first install, generate and start.
+    generate_plist()?;
+    run_launchctl("load", &PLIST_PATH, "start service")?;
 
     Ok(())
 }
@@ -103,6 +175,10 @@ pub fn check_watcher_status() -> bool {
 pub fn try_start_watcher() -> Result<(), String> {
     if check_watcher_status() {
         return Err("Watcher service is already running".to_string());
+    }
+
+    if !is_plist_installed() {
+        generate_plist()?;
     }
 
     launch_watcher_and_confirm()

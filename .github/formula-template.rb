@@ -12,13 +12,6 @@ class Nfd2nfc < Formula
     bin.install "nfd2nfc-watcher"
   end
 
-  service do
-    run [opt_bin/"nfd2nfc-watcher"]
-    keep_alive crashed: true
-    run_type :immediate
-    working_dir HOMEBREW_PREFIX
-  end
-
   test do
     assert_match "nfd2nfc", shell_output("#{bin}/nfd2nfc --version")
   end
