@@ -106,5 +106,5 @@ gh release upload assets assets/*.png --clobber
 
 ## Release Artifacts
 
-- **Tarball**: `nfd2nfc-{VERSION}-universal-apple-darwin.tar.gz` (contains `nfd2nfc` universal binary and `nfd2nfc-watcher.app` bundle)
+- **Tarball**: `nfd2nfc-{VERSION}-universal-apple-darwin.tar.gz` (contains `nfd2nfc` and `nfd2nfc-watcher` universal binaries)
 - **Formula template**: `.github/formula-template.rb` — the release workflow substitutes `PLACEHOLDER_TAG`, `PLACEHOLDER_VERSION`, and `PLACEHOLDER_SHA256` placeholders with actual values

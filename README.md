@@ -78,13 +78,11 @@ On first launch, the watcher service is automatically registered via `brew servi
 
 ### Permissions
 
-If macOS repeatedly prompts for folder access when the watcher converts files, grant **Full Disk Access** to the watcher app:
+If macOS repeatedly prompts for folder access when the watcher converts files, grant **Full Disk Access** to the watcher binary:
 
-1. Run `brew --prefix nfd2nfc` to find the install prefix
+1. Run `which nfd2nfc-watcher` to find the binary path
 2. Open **System Settings → Privacy & Security → Full Disk Access**
-3. Click `+`, press `Cmd+Shift+G`, paste `<prefix>/nfd2nfc-watcher.app`, and add it
-
-> **Note:** The watcher is temporarily packaged as an `.app` bundle to work around a [macOS Tahoe (26.x) bug](https://developer.apple.com/forums/thread/806187) where Full Disk Access does not take effect for plain CLI binaries. This will be reverted once Apple resolves the issue.
+3. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
 
 ## Upgrading from v1
 
