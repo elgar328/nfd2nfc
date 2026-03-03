@@ -75,12 +75,16 @@ jobs:
           cp .github/app-template/Info.plist "${APP_DIR}/Info.plist"
           sed -i '' "s|PLACEHOLDER_VERSION|${VERSION}|g" "${APP_DIR}/Info.plist"
 
+      - name: Sign .app bundle
+        run: codesign --force --sign - universal/nfd2nfc-watcher.app
+
       - name: Verify universal binaries
         run: |
           file universal/nfd2nfc
           file "universal/nfd2nfc-watcher.app/Contents/MacOS/nfd2nfc-watcher"
           lipo -info universal/nfd2nfc
           lipo -info "universal/nfd2nfc-watcher.app/Contents/MacOS/nfd2nfc-watcher"
+          codesign -dvv "universal/nfd2nfc-watcher.app"
 
       - name: Package tarball
         id: package
