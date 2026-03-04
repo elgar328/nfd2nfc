@@ -89,7 +89,7 @@ fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count
 }
 
 /// Spawn a background task that writes to the heartbeat file at a regular interval.
-/// Also checks if the watcher binary still exists; if removed (e.g. brew uninstall),
+/// Also checks if the watcher binary still exists; if removed (e.g. uninstallation),
 /// cleans up the plist and exits gracefully.
 fn spawn_heartbeat_task() {
     let heartbeat_dir = HEARTBEAT_PATH.parent().map(Path::to_path_buf);

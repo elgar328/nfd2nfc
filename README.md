@@ -74,7 +74,7 @@ Then run it:
 nfd2nfc
 ```
 
-On first launch, the watcher service is automatically registered via `brew services`. After that, you can start and stop it from the app.
+On first launch, the watcher service is automatically registered as a LaunchAgent. After that, you can start and stop it from the app.
 
 ### Permissions
 
@@ -84,13 +84,13 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 2. Open **System Settings → Privacy & Security → Full Disk Access**
 3. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
 
-## Upgrading from v1
+> **Note:** On macOS Tahoe 26.1–26.2, Full Disk Access does not take effect for command-line binaries due to a system bug. This is resolved in macOS 26.3.
+
+### Upgrading
 
 ```bash
 brew upgrade nfd2nfc
 ```
-
-v2 replaces the previous CLI with a more user-friendly TUI. The config format (`~/.config/nfd2nfc/config.toml`) has changed as well, so you will need to re-add your watch paths in the Config tab after upgrading.
 
 ## Uninstallation
 
