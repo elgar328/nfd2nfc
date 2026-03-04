@@ -15,3 +15,4 @@ unicode-normalization = { workspace = true }
 strum = { workspace = true }
 ureq = { workspace = true }
 unicode-width = { workspace = true }
+libc = { workspace = true }

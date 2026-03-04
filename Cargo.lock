@@ -1106,6 +1106,7 @@ version = "2.0.5-dev"
 dependencies = [
  "crossterm",
  "futures",
+ "libc",
  "log",
  "nfd2nfc-core",
  "ratatui",

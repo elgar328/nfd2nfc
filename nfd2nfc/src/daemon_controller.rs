@@ -2,35 +2,49 @@ use nfd2nfc_core::constants::{
     HEARTBEAT_MAX_AGE, HEARTBEAT_PATH, LEGACY_PLIST_PATH, NFD2NFC_SERVICE_LABEL, PLIST_PATH,
 };
 use std::process::Command;
+use std::sync::LazyLock;
 use std::time::Duration;
 
-fn run_launchctl(
-    subcommand: &str,
-    plist: &std::path::Path,
-    action_desc: &str,
-) -> Result<(), String> {
-    let status = Command::new("launchctl")
-        .args([subcommand, "-w"])
-        .arg(plist)
-        .status()
+static GUI_DOMAIN: LazyLock<String> = LazyLock::new(|| {
+    // SAFETY: getuid() is always safe and never fails.
+    let uid = unsafe { libc::getuid() };
+    format!("gui/{uid}")
+});
+
+/// Stop and remove a service from launchd by label (ignores errors).
+fn bootout_service(label: &str) {
+    let target = format!("{}/{label}", *GUI_DOMAIN);
+    let _ = Command::new("launchctl")
+        .args(["bootout", &target])
+        .output();
+}
+
+/// Load a service plist into launchd.
+fn bootstrap_service(action_desc: &str) -> Result<(), String> {
+    let output = Command::new("launchctl")
+        .args(["bootstrap", &*GUI_DOMAIN])
+        .arg(&*PLIST_PATH)
+        .output()
         .map_err(|e| format!("Failed to {action_desc}: {e}"))?;
-    if !status.success() {
-        return Err(format!("Failed to {action_desc}: {status}"));
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(format!("Failed to {action_desc}: {stderr}"));
     }
     Ok(())
 }
 
-/// Remove any stale service registration from launchctl (by label, ignores errors).
-fn remove_stale_service() {
-    let _ = Command::new("launchctl")
-        .args(["remove", NFD2NFC_SERVICE_LABEL])
-        .status();
+/// Enable or disable the service for auto-start on login (ignores errors).
+fn set_service_enabled(enabled: bool) {
+    let subcmd = if enabled { "enable" } else { "disable" };
+    let target = format!("{}/{NFD2NFC_SERVICE_LABEL}", *GUI_DOMAIN);
+    let _ = Command::new("launchctl").args([subcmd, &target]).output();
 }
 
-/// Remove stale registration then load the plist.
+/// Clean stale registration, enable, and bootstrap the service.
 fn load_service(action_desc: &str) -> Result<(), String> {
-    remove_stale_service();
-    run_launchctl("load", &PLIST_PATH, action_desc)
+    bootout_service(NFD2NFC_SERVICE_LABEL);
+    set_service_enabled(true);
+    bootstrap_service(action_desc)
 }
 
 fn launch_watcher_and_confirm() -> Result<(), String> {
@@ -47,8 +61,11 @@ fn launch_watcher_and_confirm() -> Result<(), String> {
     Err("Watcher started but heartbeat not detected".to_string())
 }
 
+/// Stop the service and disable auto-start.
 fn unload_watcher_service() -> Result<(), String> {
-    run_launchctl("unload", &PLIST_PATH, "stop service")
+    bootout_service(NFD2NFC_SERVICE_LABEL);
+    set_service_enabled(false);
+    Ok(())
 }
 
 /// Check if heartbeat file exists and was modified within max_age.
@@ -141,7 +158,7 @@ fn migrate_legacy_plist() -> Result<bool, String> {
     }
 
     // Unload the legacy service (ignore errors — it may not be loaded).
-    let _ = run_launchctl("unload", &LEGACY_PLIST_PATH, "unload legacy service");
+    bootout_service("homebrew.mxcl.nfd2nfc");
 
     // Delete the legacy plist file.
     let _ = std::fs::remove_file(&*LEGACY_PLIST_PATH);
