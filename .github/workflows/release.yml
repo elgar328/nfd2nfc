@@ -65,6 +65,8 @@ jobs:
             artifacts/nfd2nfc-watcher-aarch64-apple-darwin/nfd2nfc-watcher \
             -output universal/nfd2nfc-watcher
           chmod +x universal/nfd2nfc universal/nfd2nfc-watcher
+          codesign --force --sign - --identifier "io.github.elgar328.nfd2nfc" universal/nfd2nfc
+          codesign --force --sign - --identifier "io.github.elgar328.nfd2nfc-watcher" universal/nfd2nfc-watcher
 
       - name: Verify universal binaries
         run: |
