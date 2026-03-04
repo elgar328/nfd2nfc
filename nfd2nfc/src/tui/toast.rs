@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use crate::tui::text_util;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -7,7 +8,6 @@ use ratatui::{
     text::Line,
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 };
-use unicode_width::UnicodeWidthStr;
 
 const DISPLAY_DURATION: Duration = Duration::from_secs(3);
 const ERROR_DISPLAY_DURATION: Duration = Duration::from_secs(6);
@@ -106,7 +106,7 @@ impl ToastState {
 
         for toast in &self.toasts {
             // Calculate wrapped line count using unicode width
-            let line_count = wrapped_line_count(&toast.message, inner_width as usize);
+            let line_count = text_util::wrapped_line_count(&toast.message, inner_width as usize);
             let toast_height = 2 + line_count as u16; // top border + content lines + bottom border
 
             // Stop if toast would exceed content area
@@ -167,16 +167,4 @@ impl ToastState {
 
 fn slide_offset(started_at: Instant) -> u16 {
     (started_at.elapsed().as_secs_f64() * SLIDE_PX_PER_SEC) as u16
-}
-
-/// Calculate the number of wrapped lines for a message given inner width.
-fn wrapped_line_count(message: &str, width: usize) -> usize {
-    if width == 0 {
-        return 1;
-    }
-    let text_width = UnicodeWidthStr::width(message);
-    if text_width == 0 {
-        return 1;
-    }
-    text_width.div_ceil(width)
 }

@@ -10,7 +10,7 @@ use crate::tui::styles::{
 use crate::tui::tabs::config::modal::state::AddModalState;
 use crossterm::event::KeyCode;
 use nfd2nfc_core::config::PathAction;
-use nfd2nfc_core::utils::abbreviate_home;
+use nfd2nfc_core::utils::abbreviate_home_path;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
@@ -67,13 +67,13 @@ pub fn render_add_modal(
     .render(f, modal_area, mouse);
 
     // Current selected path
-    let current_path = abbreviate_home(
-        &modal
+    let current_path = abbreviate_home_path(
+        modal
             .browser
             .selected_entry()
             .filter(|e| !e.is_parent)
-            .map(|e| e.path.to_string_lossy().to_string())
-            .unwrap_or_else(|| modal.browser.current_dir.to_string_lossy().to_string()),
+            .map(|e| e.path.as_path())
+            .unwrap_or(&modal.browser.current_dir),
     );
 
     // Height: border(2) + path line(1)

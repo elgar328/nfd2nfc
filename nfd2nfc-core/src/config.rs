@@ -191,7 +191,7 @@ fn io_error_to_status(e: &std::io::Error) -> PathStatus {
 }
 
 /// Validate a single path string. Returns (canonical PathBuf if valid, status).
-pub fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
+pub(crate) fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
     let trimmed = path_str.trim();
     if trimmed.is_empty() {
         return (None, PathStatus::NotFound);
@@ -258,7 +258,8 @@ fn find_fallback_parent(
     idx: usize,
     canonical: &Path,
 ) -> Option<usize> {
-    let mut best: Option<(usize, usize)> = None; // (index, path_len)
+    let mut best_index: Option<usize> = None;
+    let mut best_len: usize = 0;
     for (j, entry_j) in entries.iter().enumerate() {
         if j == idx || !matches!(statuses[j], PathStatus::Active) {
             continue;
@@ -269,13 +270,14 @@ fn find_fallback_parent(
                 && canonical.starts_with(jc);
             if is_parent {
                 let jlen = jc.as_os_str().len();
-                if best.is_none_or(|(_, best_len)| jlen > best_len) {
-                    best = Some((j, jlen));
+                if best_index.is_none() || jlen > best_len {
+                    best_index = Some(j);
+                    best_len = jlen;
                 }
             }
         }
     }
-    best.map(|(idx, _)| idx)
+    best_index
 }
 
 /// Compute redundancy statuses for all entries.
@@ -287,7 +289,7 @@ fn find_fallback_parent(
 /// 3. F exists and F.action == E.action → Redundant(F's index)
 /// 4. F exists and F.action != E.action → Active (exception)
 /// 5. No F → Active
-pub fn compute_statuses(entries: &mut [PathEntry]) {
+pub(crate) fn compute_statuses(entries: &mut [PathEntry]) {
     let order = build_processing_order(entries);
 
     // Track statuses and overrides separately to avoid borrow issues.

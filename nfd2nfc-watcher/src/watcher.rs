@@ -89,31 +89,38 @@ fn log_watch_summary(recursive_count: usize, children_count: usize, ignore_count
 }
 
 /// Spawn a background task that writes to the heartbeat file at a regular interval.
-/// Also checks if the watcher binary still exists; if removed (e.g. uninstallation),
-/// cleans up the plist and exits gracefully.
 fn spawn_heartbeat_task() {
     let heartbeat_dir = HEARTBEAT_PATH.parent().map(Path::to_path_buf);
-    let exe_path = std::env::current_exe().ok();
     spawn(async move {
         let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
         loop {
             interval.tick().await;
-
-            // Check if our binary still exists on disk.
-            if let Some(ref path) = exe_path
-                && !path.exists()
-            {
-                info!("Binary removed. Cleaning up plist and exiting.");
-                let _ = std::fs::remove_file(&*PLIST_PATH);
-                let _ = std::fs::remove_file(&*HEARTBEAT_PATH);
-                std::process::exit(0);
-            }
-
             if let Err(e) = std::fs::write(&*HEARTBEAT_PATH, "")
                 && e.kind() == std::io::ErrorKind::NotFound
                 && let Some(dir) = &heartbeat_dir
             {
                 let _ = std::fs::create_dir_all(dir);
+            }
+        }
+    });
+}
+
+/// Spawn a background task that checks if the watcher binary still exists on disk.
+/// If removed (e.g. uninstallation), cleans up the plist and heartbeat file, then exits.
+fn spawn_binary_watchdog() {
+    let exe_path = match std::env::current_exe().ok() {
+        Some(p) => p,
+        None => return,
+    };
+    spawn(async move {
+        let mut interval = tokio::time::interval(HEARTBEAT_INTERVAL);
+        loop {
+            interval.tick().await;
+            if !exe_path.exists() {
+                info!("Binary removed. Cleaning up plist and exiting.");
+                let _ = std::fs::remove_file(&*PLIST_PATH);
+                let _ = std::fs::remove_file(&*HEARTBEAT_PATH);
+                std::process::exit(0);
             }
         }
     });
@@ -151,6 +158,7 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, entries: Vec<Activ
         register_watch_paths(&mut watcher, &entries);
     log_watch_summary(recursive_count, children_count, ignore_count);
     spawn_heartbeat_task();
+    spawn_binary_watchdog();
 
     // Limit the number of concurrently executing tasks using a semaphore.
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_TASKS));
@@ -179,6 +187,7 @@ pub async fn start_watcher(rt_handle: tokio::runtime::Handle, entries: Vec<Activ
                             Some(name) => name,
                             None => continue,
                         };
+                        // Early filter: skip files already in NFC to avoid unnecessary spawn_blocking in handler
                         if !NormalizationTarget::NFC.needs_conversion(file_name) {
                             continue;
                         }

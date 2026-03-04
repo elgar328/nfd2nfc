@@ -7,6 +7,7 @@ use crate::tui::tabs::config::modal::events::{
     handle_modal_double_click, handle_modal_mouse_click, handle_modal_scroll,
 };
 use crate::tui::tabs::config::state::ConfigState;
+use crate::tui::text_util;
 
 pub fn handle_key(state: &mut ConfigState, key: KeyCode, _shared: &SharedState) -> Option<Action> {
     if state.modal.show {
@@ -104,11 +105,14 @@ fn handle_table_mouse_click(state: &mut ConfigState, y: u16) {
     let table_data_start_y = inner_y + 2;
     let table_end_y = ca.y + ca.height - 1;
 
-    if y >= table_data_start_y && y < table_end_y {
-        let clicked_index = (y - table_data_start_y) as usize;
-        if clicked_index < state.config.paths.len() {
-            state.table_state.select(Some(clicked_index));
-        }
+    if let Some(idx) = text_util::clicked_list_index(
+        y,
+        table_data_start_y,
+        table_end_y,
+        0,
+        state.config.paths.len(),
+    ) {
+        state.table_state.select(Some(idx));
     }
 }
 

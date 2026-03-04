@@ -1,3 +1,4 @@
+use crate::tui::text_util;
 use crossterm::event::KeyCode;
 use ratatui::{
     Frame,
@@ -6,7 +7,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
-use unicode_width::UnicodeWidthStr;
 
 use crate::tui::app::events::MouseState;
 use crate::tui::app::render::content_area;
@@ -20,7 +20,7 @@ use crate::tui::styles::{
     reverse_value_style,
 };
 use crate::tui::tabs::browser::state::{BrowserAction, BrowserMode, BrowserState};
-use nfd2nfc_core::utils::abbreviate_home;
+use nfd2nfc_core::utils::abbreviate_home_path;
 
 pub fn render(
     state: &mut BrowserState,
@@ -52,20 +52,20 @@ pub fn render(
         .render(f, area, mouse);
 
     // Current path text
-    let path_text = abbreviate_home(
-        &state
+    let path_text = abbreviate_home_path(
+        state
             .dir_browser
             .selected_entry()
             .filter(|e| !e.is_parent)
-            .map(|e| e.path.to_string_lossy().to_string())
-            .unwrap_or_else(|| state.dir_browser.current_dir.to_string_lossy().to_string()),
+            .map(|e| e.path.as_path())
+            .unwrap_or(&state.dir_browser.current_dir),
     );
 
     // Calculate dynamic path height based on text width and available inner width
     // inner.width - 2 accounts for the Path block's left/right borders
     let path_inner_width = inner.width.saturating_sub(2).max(1) as usize;
-    let text_width = UnicodeWidthStr::width(path_text.as_str());
-    let path_lines = ((text_width as f64 / path_inner_width as f64).ceil() as u16).clamp(1, 3);
+    let path_lines =
+        (text_util::wrapped_line_count(&path_text, path_inner_width) as u16).clamp(1, 3);
     let path_height = path_lines + 2; // +2 for top/bottom borders
     state.path_height = path_height;
 

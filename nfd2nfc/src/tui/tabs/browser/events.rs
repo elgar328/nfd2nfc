@@ -98,12 +98,7 @@ pub fn handle_scroll(state: &mut BrowserState, direction: ScrollDirection) -> Op
 
 fn clicked_entry_index(state: &BrowserState, y: u16) -> Option<usize> {
     let (list_start_y, list_end_y) = browser_list_y_range(state.path_height);
-    if y >= list_start_y && y < list_end_y {
-        let idx = (y - list_start_y) as usize + state.dir_browser.render_offset;
-        (idx < state.dir_browser.entries.len()).then_some(idx)
-    } else {
-        None
-    }
+    state.dir_browser.clicked_index(y, list_start_y, list_end_y)
 }
 
 pub fn handle_mouse_click(state: &mut BrowserState, _x: u16, y: u16) -> Option<Action> {

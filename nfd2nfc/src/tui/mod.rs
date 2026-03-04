@@ -4,6 +4,7 @@ pub mod dir_browser;
 pub mod shortcuts;
 pub mod styles;
 pub mod tabs;
+pub mod text_util;
 pub mod tick_timer;
 pub mod toast;
 

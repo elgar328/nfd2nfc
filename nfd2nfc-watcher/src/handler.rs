@@ -2,6 +2,28 @@ use log::{error, info};
 use nfd2nfc_core::normalizer::{NormalizationTarget, get_actual_file_name};
 use nfd2nfc_core::utils::abbreviate_home_path;
 use notify::Event;
+use std::path::Path;
+
+async fn get_actual_name(path: &Path) -> Option<String> {
+    let p = path.to_path_buf();
+    match tokio::task::spawn_blocking(move || get_actual_file_name(&p)).await {
+        Ok(Ok(name)) => Some(name),
+        Ok(Err(ref e)) => {
+            if !e.is_not_found() {
+                error!(
+                    "Failed to get file name: {} — {}",
+                    abbreviate_home_path(path),
+                    e
+                );
+            }
+            None
+        }
+        Err(e) => {
+            error!("Task join error: {}", e);
+            None
+        }
+    }
+}
 
 pub async fn handle_event(event: Event) {
     let path = match event.paths.first() {
@@ -9,25 +31,10 @@ pub async fn handle_event(event: Event) {
         None => return,
     };
 
-    let path_clone = path.to_path_buf();
-    let actual_name =
-        match tokio::task::spawn_blocking(move || get_actual_file_name(&path_clone)).await {
-            Ok(Ok(name)) => name,
-            Ok(Err(ref e)) => {
-                if !e.is_not_found() {
-                    error!(
-                        "Failed to get file name: {} — {}",
-                        abbreviate_home_path(path),
-                        e
-                    );
-                }
-                return;
-            }
-            Err(e) => {
-                error!("Task join error: {}", e);
-                return;
-            }
-        };
+    let actual_name = match get_actual_name(path).await {
+        Some(name) => name,
+        None => return,
+    };
 
     let target = NormalizationTarget::NFC;
     if !target.needs_conversion(&actual_name) {

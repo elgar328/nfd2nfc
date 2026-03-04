@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 
-use ratatui::style::{Color, Style};
-use unicode_width::UnicodeWidthChar;
-
 use crate::log_service::{self, LogEntry, LogEvent};
+use crate::tui::text_util;
+use ratatui::style::{Color, Style};
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -62,7 +61,7 @@ impl LineCache {
             let abs_index = base_index + i;
             let msg_style = entry_style(entry);
 
-            let wrapped = wrap_text(&entry.message, available_width);
+            let wrapped = text_util::wrap_text(&entry.message, available_width);
             self.push_wrapped_lines(wrapped, msg_style, &entry.display_time, abs_index);
         }
 
@@ -84,7 +83,7 @@ impl LineCache {
         self.remove_padding();
 
         let msg_style = entry_style(entry);
-        let wrapped = wrap_text(&entry.message, available_width);
+        let wrapped = text_util::wrap_text(&entry.message, available_width);
         let line_count = wrapped.len();
 
         self.push_wrapped_lines(wrapped, msg_style, &entry.display_time, abs_index);
@@ -178,44 +177,6 @@ fn entry_style(entry: &LogEntry) -> Style {
         "Debug" | "Info" => Style::default().fg(Color::DarkGray),
         _ => Style::default(),
     }
-}
-
-// ─────────────────────────────────────────────────────────────
-// wrap_text
-// ─────────────────────────────────────────────────────────────
-
-/// Wrap text to fit within max_width, respecting Unicode character boundaries
-pub fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
-    if max_width == 0 {
-        return vec![text.to_string()];
-    }
-
-    let mut lines = Vec::new();
-    let mut current_line = String::new();
-    let mut current_width = 0;
-
-    for c in text.chars() {
-        let char_width = c.width().unwrap_or(0);
-
-        if current_width + char_width > max_width && !current_line.is_empty() {
-            lines.push(current_line);
-            current_line = String::new();
-            current_width = 0;
-        }
-
-        current_line.push(c);
-        current_width += char_width;
-    }
-
-    if !current_line.is_empty() {
-        lines.push(current_line);
-    }
-
-    if lines.is_empty() {
-        lines.push(String::new());
-    }
-
-    lines
 }
 
 // ─────────────────────────────────────────────────────────────

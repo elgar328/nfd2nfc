@@ -5,6 +5,7 @@ use crossterm::event::KeyCode;
 use crate::tui::component::{Action, ScrollDirection};
 use crate::tui::dir_browser::SelectionKind;
 use crate::tui::tabs::config::modal::state::AddModalState;
+use crate::tui::text_util;
 use nfd2nfc_core::config::{PathAction, PathMode};
 
 /// Result from modal key handling that needs to be applied to ConfigState by the caller
@@ -116,14 +117,16 @@ fn resolve_click_index(modal: &AddModalState, y: u16) -> Option<usize> {
     let list_start_y = list_block_y + 1;
     let list_end_y = modal_y + modal_rect.height - 1 - 2 - 1;
 
-    if y < list_start_y || y >= list_end_y {
-        return None;
-    }
-
     let dir_entries = modal.browser.dir_indices();
 
-    let clicked_list_index = (y - list_start_y) as usize + modal.browser.render_offset;
-    dir_entries.get(clicked_list_index).copied()
+    let clicked = text_util::clicked_list_index(
+        y,
+        list_start_y,
+        list_end_y,
+        modal.browser.render_offset,
+        dir_entries.len(),
+    )?;
+    dir_entries.get(clicked).copied()
 }
 
 pub fn handle_modal_mouse_click(modal: &mut AddModalState, _x: u16, y: u16) -> Option<Action> {

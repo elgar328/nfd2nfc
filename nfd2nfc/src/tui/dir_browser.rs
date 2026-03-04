@@ -12,6 +12,7 @@ use nfd2nfc_core::{is_nfc, is_nfd};
 use unicode_normalization::UnicodeNormalization;
 
 use crate::tui::component::{next_index, prev_index};
+use crate::tui::text_util;
 use crate::tui::tick_timer::TickTimer;
 
 const AUTO_REFRESH_INTERVAL: Duration = Duration::from_millis(500);
@@ -325,6 +326,16 @@ impl DirBrowser {
                 self.list_state.select(Some(idx));
             }
         }
+    }
+
+    pub fn clicked_index(&self, y: u16, list_start_y: u16, list_end_y: u16) -> Option<usize> {
+        text_util::clicked_list_index(
+            y,
+            list_start_y,
+            list_end_y,
+            self.render_offset,
+            self.entries.len(),
+        )
     }
 
     pub fn toggle_hidden(&mut self) {

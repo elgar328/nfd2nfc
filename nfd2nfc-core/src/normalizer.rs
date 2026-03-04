@@ -280,11 +280,6 @@ fn is_same_filesystem(original_path: &Path, new_path: &Path) -> bool {
     original_dev == new_dev
 }
 
-#[cfg(not(unix))]
-fn is_same_filesystem(_original_path: &Path, _new_path: &Path) -> bool {
-    true
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

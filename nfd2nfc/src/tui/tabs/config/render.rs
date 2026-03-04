@@ -1,3 +1,4 @@
+use crate::tui::text_util;
 use crossterm::event::KeyCode;
 use ratatui::{
     Frame,
@@ -6,7 +7,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, Wrap},
 };
-use unicode_width::UnicodeWidthStr;
 
 const CONFIG_TABLE_WIDTHS: [ratatui::layout::Constraint; 5] = [
     ratatui::layout::Constraint::Length(3),
@@ -22,8 +22,10 @@ use crate::tui::shortcuts::{ShortcutBlock, gap, space};
 use crate::tui::styles::{key_style, label_style};
 use crate::tui::tabs::config::modal::render::render_add_modal;
 use crate::tui::tabs::config::state::ConfigState;
+use std::path::Path;
+
 use nfd2nfc_core::config::{PathAction, PathEntry, PathMode, PathStatus};
-use nfd2nfc_core::utils::abbreviate_home;
+use nfd2nfc_core::utils::abbreviate_home_path;
 
 fn path_description(idx: usize, entries: &[PathEntry]) -> String {
     let entry = &entries[idx];
@@ -179,7 +181,7 @@ pub fn render(
         let line_count = if inner_width > 0 {
             desc_text
                 .lines()
-                .map(|line| line.width().div_ceil(inner_width).max(1) as u16)
+                .map(|line| text_util::wrapped_line_count(line, inner_width).max(1) as u16)
                 .sum::<u16>()
                 .max(1)
         } else {
@@ -230,7 +232,7 @@ pub fn render(
                 (entry.mode.as_str(), Style::default())
             };
 
-            let abbreviated = abbreviate_home(&entry.raw);
+            let abbreviated = abbreviate_home_path(Path::new(&entry.raw));
             let path_cell = if is_active {
                 Cell::from(abbreviated.as_str().to_owned())
             } else {
