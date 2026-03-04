@@ -20,8 +20,21 @@ fn run_launchctl(
     Ok(())
 }
 
+/// Remove any stale service registration from launchctl (by label, ignores errors).
+fn remove_stale_service() {
+    let _ = Command::new("launchctl")
+        .args(["remove", NFD2NFC_SERVICE_LABEL])
+        .status();
+}
+
+/// Remove stale registration then load the plist.
+fn load_service(action_desc: &str) -> Result<(), String> {
+    remove_stale_service();
+    run_launchctl("load", &PLIST_PATH, action_desc)
+}
+
 fn launch_watcher_and_confirm() -> Result<(), String> {
-    run_launchctl("load", &PLIST_PATH, "start watcher")?;
+    load_service("start watcher")?;
 
     // Wait for heartbeat file to be created/updated (max 5 seconds).
     for _ in 0..250 {
@@ -135,7 +148,7 @@ fn migrate_legacy_plist() -> Result<bool, String> {
 
     // Generate new plist and load it.
     generate_plist()?;
-    run_launchctl("load", &PLIST_PATH, "load migrated service")?;
+    load_service("load migrated service")?;
 
     Ok(true)
 }
@@ -153,14 +166,14 @@ pub fn ensure_plist_up_to_date() -> Result<(), String> {
         if is_plist_stale() {
             let _ = unload_watcher_service();
             generate_plist()?;
-            run_launchctl("load", &PLIST_PATH, "reload updated service")?;
+            load_service("reload updated service")?;
         }
         return Ok(());
     }
 
     // Plist missing — first install, generate and start.
     generate_plist()?;
-    run_launchctl("load", &PLIST_PATH, "start service")?;
+    load_service("start service")?;
 
     Ok(())
 }
