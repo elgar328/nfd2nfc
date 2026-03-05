@@ -92,6 +92,8 @@ Watcher가 파일을 변환할 때 macOS가 폴더 접근 권한을 반복적으
 brew upgrade nfd2nfc
 ```
 
+전체 디스크 접근 권한을 사용 중이라면, 업그레이드 후 기존 `nfd2nfc-watcher` 항목을 제거하고 다시 추가하세요.
+
 ## 제거 방법
 
 ```bash

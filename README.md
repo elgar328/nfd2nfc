@@ -92,6 +92,8 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 brew upgrade nfd2nfc
 ```
 
+After upgrading, remove the old `nfd2nfc-watcher` entry from Full Disk Access and re-add it if previously granted.
+
 ## Uninstallation
 
 ```bash

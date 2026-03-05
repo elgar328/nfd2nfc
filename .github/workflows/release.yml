@@ -8,109 +8,53 @@ on:
 permissions:
   contents: write
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: macos-15-intel
-            target: x86_64-apple-darwin
-          - os: macos-15
-            target: aarch64-apple-darwin
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        run: rustup target add ${{ matrix.target }}
-
-      - name: Build release
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Upload nfd2nfc binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: nfd2nfc-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/nfd2nfc
-
-      - name: Upload nfd2nfc-watcher binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: nfd2nfc-watcher-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/nfd2nfc-watcher
-
   release:
-    needs: build
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create universal binaries
+      - name: Detect prerelease
+        id: prerelease
         run: |
-          mkdir -p universal
-          lipo -create \
-            artifacts/nfd2nfc-x86_64-apple-darwin/nfd2nfc \
-            artifacts/nfd2nfc-aarch64-apple-darwin/nfd2nfc \
-            -output universal/nfd2nfc
-          lipo -create \
-            artifacts/nfd2nfc-watcher-x86_64-apple-darwin/nfd2nfc-watcher \
-            artifacts/nfd2nfc-watcher-aarch64-apple-darwin/nfd2nfc-watcher \
-            -output universal/nfd2nfc-watcher
-          chmod +x universal/nfd2nfc universal/nfd2nfc-watcher
-          codesign --force --sign - --identifier "io.github.elgar328.nfd2nfc" universal/nfd2nfc
-          codesign --force --sign - --identifier "io.github.elgar328.nfd2nfc-watcher" universal/nfd2nfc-watcher
-
-      - name: Verify universal binaries
-        run: |
-          file universal/nfd2nfc
-          file universal/nfd2nfc-watcher
-          lipo -info universal/nfd2nfc
-          lipo -info universal/nfd2nfc-watcher
-
-      - name: Package tarball
-        id: package
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          ARCHIVE="nfd2nfc-${VERSION}-universal-apple-darwin.tar.gz"
-          tar -czf "$ARCHIVE" -C universal nfd2nfc nfd2nfc-watcher
-          SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
-          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_NAME" == *-rc.* ]]; then
+            echo "is_rc=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_rc=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create GitHub release
         run: |
+          FLAGS=""
+          if [[ "${{ steps.prerelease.outputs.is_rc }}" == "true" ]]; then
+            FLAGS="--prerelease"
+          fi
           gh release create "$GITHUB_REF_NAME" \
-            "${{ steps.package.outputs.archive }}" \
-            --generate-notes
+            --generate-notes \
+            $FLAGS
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Homebrew tap
+      - name: Update Homebrew tap (RC only)
+        if: steps.prerelease.outputs.is_rc == 'true'
         env:
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
-          VERSION="${{ steps.package.outputs.version }}"
-          SHA256="${{ steps.package.outputs.sha256 }}"
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          # Compute SHA256 of source tarball (retry for tag creation delay)
+          curl -sL --retry 3 --retry-delay 5 "https://github.com/elgar328/nfd2nfc/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz" -o source.tar.gz
+          SOURCE_SHA256=$(shasum -a 256 source.tar.gz | awk '{print $1}')
 
           git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/elgar328/homebrew-nfd2nfc.git" tap
           cd tap
 
           cp "$GITHUB_WORKSPACE/.github/formula-template.rb" Formula/nfd2nfc.rb
-          sed -i '' "s|PLACEHOLDER_TAG|v${VERSION}|g" Formula/nfd2nfc.rb
-          sed -i '' "s|PLACEHOLDER_VERSION|${VERSION}|g" Formula/nfd2nfc.rb
-          sed -i '' "s|PLACEHOLDER_SHA256|${SHA256}|g" Formula/nfd2nfc.rb
+          sed -i '' "s|PLACEHOLDER_TAG|${GITHUB_REF_NAME}|g" Formula/nfd2nfc.rb
+          sed -i '' "s|PLACEHOLDER_SHA256|${SOURCE_SHA256}|g" Formula/nfd2nfc.rb
 
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/nfd2nfc.rb
           git commit -m "Update nfd2nfc to ${VERSION}"
           git push
