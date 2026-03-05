@@ -157,6 +157,8 @@ pub fn render(
         // Restore scroll position from anchor
         if let Some(entry_idx) = anchor_entry {
             state.scroll_offset = state.line_cache.first_line_of_entry(entry_idx);
+        } else if state.auto_scroll {
+            state.scroll_offset = usize::MAX;
         }
     }
 
