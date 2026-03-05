@@ -34,27 +34,3 @@ jobs:
             $FLAGS
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update Homebrew tap (RC only)
-        if: steps.prerelease.outputs.is_rc == 'true'
-        env:
-          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-
-          # Compute SHA256 of source tarball (retry for tag creation delay)
-          curl -sL --retry 3 --retry-delay 5 "https://github.com/elgar328/nfd2nfc/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz" -o source.tar.gz
-          SOURCE_SHA256=$(shasum -a 256 source.tar.gz | awk '{print $1}')
-
-          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/elgar328/homebrew-nfd2nfc.git" tap
-          cd tap
-
-          cp "$GITHUB_WORKSPACE/.github/formula-template.rb" Formula/nfd2nfc.rb
-          sed -i '' "s|PLACEHOLDER_TAG|${GITHUB_REF_NAME}|g" Formula/nfd2nfc.rb
-          sed -i '' "s|PLACEHOLDER_SHA256|${SOURCE_SHA256}|g" Formula/nfd2nfc.rb
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/nfd2nfc.rb
-          git commit -m "Update nfd2nfc to ${VERSION}"
-          git push
