@@ -65,7 +65,7 @@ nfd2nfc solves the root cause of filenames breaking across operating systems —
 Requires [Homebrew](https://brew.sh).
 
 ```bash
-brew install elgar328/nfd2nfc/nfd2nfc
+brew install nfd2nfc
 ```
 
 Then run it:
