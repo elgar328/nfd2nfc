@@ -6,6 +6,9 @@
 
 [![한국어](https://img.shields.io/badge/lang-한국어_↗-blue)](docs/README.ko.md)
 
+> [!NOTE]
+> **nfd2nfc is now on homebrew-core!** If you previously installed via the tap, see [Migration](#migration).
+
 A macOS tool that watches directories and converts NFD filenames to NFC in real time, ensuring cross-platform compatibility.
 
 ## What is NFD/NFC?
@@ -65,7 +68,7 @@ nfd2nfc solves the root cause of filenames breaking across operating systems —
 Requires [Homebrew](https://brew.sh).
 
 ```bash
-brew install elgar328/nfd2nfc/nfd2nfc
+brew install nfd2nfc
 ```
 
 Then run it:
@@ -85,6 +88,16 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 3. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
 
 > **Note:** On macOS Tahoe 26.1–26.2, Full Disk Access does not take effect for command-line binaries due to a system bug. This is resolved in macOS 26.3.
+
+### Migration
+
+If you previously installed via the tap (`elgar328/nfd2nfc`):
+
+```bash
+brew uninstall nfd2nfc
+brew untap elgar328/nfd2nfc
+brew install nfd2nfc
+```
 
 ### Upgrading
 
