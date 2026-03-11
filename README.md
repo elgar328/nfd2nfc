@@ -86,13 +86,16 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 
 1. Run `which nfd2nfc-watcher` to find the binary path
 2. Open **System Settings → Privacy & Security → Full Disk Access**
-3. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
+3. If `nfd2nfc-watcher` is already listed, remove it completely (click `-`, not just toggle off)
+4. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
+
+After upgrading to a new version, you must re-do the steps above to grant Full Disk Access again.
 
 > **Note:** On macOS Tahoe 26.1–26.2, Full Disk Access does not take effect for command-line binaries due to a system bug. This is resolved in macOS 26.3.
 
 ### Migration
 
-If you previously installed via the tap (`elgar328/nfd2nfc`):
+Starting with v2.0.7, nfd2nfc moved from the personal tap to homebrew-core. If you are using v2.0.6 or earlier, migrate with:
 
 ```bash
 brew uninstall nfd2nfc
@@ -106,7 +109,7 @@ brew install nfd2nfc
 brew upgrade nfd2nfc
 ```
 
-After upgrading, remove the old `nfd2nfc-watcher` entry from Full Disk Access and re-add it if previously granted.
+If you have granted Full Disk Access, you must reconfigure it after upgrading.
 
 ## Uninstallation
 
