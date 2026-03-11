@@ -1,5 +1,6 @@
 # nfd2nfc
 
+[![Homebrew](https://img.shields.io/homebrew/v/nfd2nfc)](https://formulae.brew.sh/formula/nfd2nfc)
 [![Release](https://img.shields.io/github/v/release/elgar328/nfd2nfc)](https://github.com/elgar328/nfd2nfc/releases)
 [![CI](https://github.com/elgar328/nfd2nfc/actions/workflows/ci.yml/badge.svg)](https://github.com/elgar328/nfd2nfc/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/elgar328/nfd2nfc)](https://github.com/elgar328/nfd2nfc#license)
