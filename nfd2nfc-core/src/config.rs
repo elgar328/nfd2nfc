@@ -1,6 +1,5 @@
 use crate::constants::CONFIG_PATH;
 use crate::utils::expand_tilde;
-use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -200,10 +199,7 @@ pub(crate) fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
     let expanded = expand_tilde(trimmed);
     let canonical = match fs::canonicalize(&expanded) {
         Ok(p) => p,
-        Err(e) => {
-            debug!("Canonicalization failed for {}: {}", expanded.display(), e);
-            return (None, io_error_to_status(&e));
-        }
+        Err(e) => return (None, io_error_to_status(&e)),
     };
 
     match fs::metadata(&canonical) {
@@ -214,10 +210,7 @@ pub(crate) fn validate_path(path_str: &str) -> (Option<PathBuf>, PathStatus) {
                 (Some(canonical), PathStatus::Active)
             }
         }
-        Err(e) => {
-            debug!("Metadata read failed for {}: {}", canonical.display(), e);
-            (None, io_error_to_status(&e))
-        }
+        Err(e) => (None, io_error_to_status(&e)),
     }
 }
 
@@ -344,27 +337,17 @@ pub fn load_config() -> (Config, Option<ConfigError>) {
     let path = &*CONFIG_PATH;
 
     if !path.exists() {
-        debug!(
-            "No config file at {}. Default configuration will be used.",
-            path.display()
-        );
         return (Config::default(), None);
     }
 
     let content = match fs::read_to_string(path) {
         Ok(c) => c,
-        Err(e) => {
-            warn!("Failed to read config file: {}", e);
-            return (Config::default(), Some(ConfigError::Io(e)));
-        }
+        Err(e) => return (Config::default(), Some(ConfigError::Io(e))),
     };
 
     let config_file: ConfigFile = match toml::from_str(&content) {
         Ok(c) => c,
-        Err(e) => {
-            warn!("Failed to parse config file: {}", e);
-            return (Config::default(), Some(ConfigError::Parse(e)));
-        }
+        Err(e) => return (Config::default(), Some(ConfigError::Parse(e))),
     };
 
     let mut entries: Vec<PathEntry> = config_file

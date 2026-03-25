@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use crate::utils::expand_tilde;
-use log::error;
 use once_cell::sync::Lazy;
 use std::path::PathBuf;
 use std::process;
@@ -30,7 +29,7 @@ pub static HEARTBEAT_PATH: Lazy<PathBuf> = Lazy::new(|| {
 pub static HOME_DIR: Lazy<PathBuf> = Lazy::new(|| match dirs::home_dir() {
     Some(path) => path,
     None => {
-        error!("HOME environment variable is not set.");
+        eprintln!("HOME environment variable is not set.");
         // Exit normally to prevent auto-restart.
         process::exit(0);
     }

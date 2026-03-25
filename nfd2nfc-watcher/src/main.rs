@@ -20,8 +20,11 @@ async fn main() {
     // If HOME is not set, exit normally (code 0) to prevent auto-restart.
     Lazy::force(&HOME_DIR);
 
-    // Load the configuration file. Errors are ignored (empty config = no watch paths).
-    let (config, _) = config::load_config();
+    // Load the configuration file. On error, use empty config (no watch paths).
+    let (config, config_error) = config::load_config();
+    if let Some(e) = &config_error {
+        warn!("Config load issue: {}", e);
+    }
     let active = config.active_entries();
 
     // Initialize heartbeat: create directory and initial file
