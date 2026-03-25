@@ -1,5 +1,3 @@
-use crate::utils::abbreviate_home_path;
-use log::{debug, error, info};
 use rayon::prelude::*;
 use std::collections::VecDeque;
 use std::ffi::CStr;
@@ -78,6 +76,27 @@ impl NormalizerError {
     }
 }
 
+/// Result of a single file/folder name conversion.
+#[derive(Debug)]
+pub struct ConversionResult {
+    pub from: PathBuf,
+    pub to: PathBuf,
+}
+
+/// Error that occurred during conversion of a single entry (non-fatal in batch).
+#[derive(Debug)]
+pub struct ConversionError {
+    pub path: PathBuf,
+    pub error: String,
+}
+
+/// Result of a directory conversion operation.
+#[derive(Debug)]
+pub struct DirectoryResult {
+    pub converted: Vec<ConversionResult>,
+    pub errors: Vec<ConversionError>,
+}
+
 /// Get the actual file name as stored on disk using macOS fcntl F_GETPATH.
 /// This is O(1) compared to O(n) directory scanning.
 ///
@@ -111,18 +130,11 @@ pub fn get_actual_file_name(path: &Path) -> Result<String, NormalizerError> {
 pub fn normalize_single_file(
     target_path: &Path,
     target: NormalizationTarget,
-) -> Result<(), NormalizerError> {
-    info!(
-        "Starting single file conversion to {} for: {}",
-        target,
-        abbreviate_home_path(target_path)
-    );
-
+) -> Result<Option<ConversionResult>, NormalizerError> {
     let actual_name = get_actual_file_name(target_path)?;
 
     if !target.needs_conversion(&actual_name) {
-        debug!("No conversion needed for: {}", target_path.display());
-        return Ok(());
+        return Ok(None);
     }
 
     let new_name = target.convert(&actual_name);
@@ -134,13 +146,10 @@ pub fn normalize_single_file(
         source: e,
     })?;
 
-    info!(
-        "Converted {} to {}",
-        abbreviate_home_path(&new_path),
-        target
-    );
-
-    Ok(())
+    Ok(Some(ConversionResult {
+        from: target_path.to_path_buf(),
+        to: new_path,
+    }))
 }
 
 /// Process a single directory entry: rename if needed, return subdirectory path for recursion.
@@ -149,71 +158,58 @@ fn process_entry(
     target: NormalizationTarget,
     target_folder: &Path,
     recursive: bool,
-) -> Option<PathBuf> {
+) -> (
+    Result<Option<ConversionResult>, ConversionError>,
+    Option<PathBuf>,
+) {
     let path = entry.path();
 
-    let name = path.file_name()?;
+    let name = match path.file_name() {
+        Some(n) => n,
+        None => return (Ok(None), None),
+    };
 
     if name == "." || name == ".." {
-        debug!("Skipping dot entry: {}", path.display());
-        return None;
+        return (Ok(None), None);
     }
 
     let original_name = name.to_string_lossy();
 
-    let new_path = if target.needs_conversion(&original_name) {
+    let (result, new_path) = if target.needs_conversion(&original_name) {
         let new_name = target.convert(&original_name);
         let renamed_path = path.with_file_name(&new_name);
         match fs::rename(&path, &renamed_path) {
-            Ok(_) => {
-                info!(
-                    "Converted {} to {}",
-                    abbreviate_home_path(&renamed_path),
-                    target
-                );
-                renamed_path
-            }
-            Err(e) => {
-                error!(
-                    "Failed to convert {} to {}: {}",
-                    abbreviate_home_path(&path),
-                    target,
-                    e
-                );
-                path
-            }
+            Ok(_) => (
+                Ok(Some(ConversionResult {
+                    from: path.clone(),
+                    to: renamed_path.clone(),
+                })),
+                renamed_path,
+            ),
+            Err(e) => (
+                Err(ConversionError {
+                    path: path.clone(),
+                    error: e.to_string(),
+                }),
+                path,
+            ),
         }
     } else {
-        debug!(
-            "Entry already in {}: {}",
-            target,
-            abbreviate_home_path(&path)
-        );
-        path
+        (Ok(None), path)
     };
 
     // Check if we should recurse into this directory
     if !(recursive && new_path.is_dir()) {
-        return None;
+        return (result, None);
     }
     let metadata = match fs::symlink_metadata(&new_path) {
         Ok(m) => m,
-        Err(_) => {
-            error!(
-                "Failed to get metadata for {}",
-                abbreviate_home_path(&new_path)
-            );
-            return None;
-        }
+        Err(_) => return (result, None),
     };
     if metadata.file_type().is_symlink() || !is_same_filesystem(target_folder, &new_path) {
-        debug!(
-            "Skipping directory (symlink or different FS): {}",
-            new_path.display()
-        );
-        return None;
+        return (result, None);
     }
-    Some(new_path)
+    (result, Some(new_path))
 }
 
 /// Normalize filenames in a directory to the target normalization form.
@@ -224,52 +220,43 @@ pub fn normalize_directory(
     target_folder: &Path,
     recursive: bool,
     target: NormalizationTarget,
-) -> Result<(), NormalizerError> {
-    info!(
-        "Starting folder conversion to {} for: {} (recursive: {})",
-        target,
-        abbreviate_home_path(target_folder),
-        recursive
-    );
+) -> Result<DirectoryResult, NormalizerError> {
+    let mut converted = Vec::new();
+    let mut errors = Vec::new();
 
     let mut queue = VecDeque::new();
     queue.push_back(target_folder.to_path_buf());
 
     while let Some(current_dir) = queue.pop_front() {
-        debug!(
-            "Processing directory: {}",
-            abbreviate_home_path(&current_dir)
-        );
-
         let entries: Vec<_> = match fs::read_dir(&current_dir) {
             Ok(entries) => entries.filter_map(|entry| entry.ok()).collect(),
             Err(e) => {
-                error!(
-                    "Failed to read directory {}: {}",
-                    abbreviate_home_path(&current_dir),
-                    e
-                );
+                errors.push(ConversionError {
+                    path: current_dir,
+                    error: e.to_string(),
+                });
                 continue;
             }
         };
 
-        let subdirs: Vec<_> = entries
+        let results: Vec<_> = entries
             .par_iter()
-            .filter_map(|entry| process_entry(entry, target, target_folder, recursive))
+            .map(|entry| process_entry(entry, target, target_folder, recursive))
             .collect();
 
-        if recursive {
-            queue.extend(subdirs);
+        for (result, subdir) in results {
+            match result {
+                Ok(Some(c)) => converted.push(c),
+                Ok(None) => {}
+                Err(e) => errors.push(e),
+            }
+            if recursive && let Some(d) = subdir {
+                queue.push_back(d);
+            }
         }
     }
 
-    info!(
-        "Completed folder conversion to {} for: {}",
-        target,
-        abbreviate_home_path(target_folder)
-    );
-
-    Ok(())
+    Ok(DirectoryResult { converted, errors })
 }
 
 /// Check if two paths are on the same filesystem.

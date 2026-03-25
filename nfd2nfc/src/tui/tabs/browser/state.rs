@@ -120,14 +120,12 @@ impl BrowserState {
             path.clone()
         };
 
-        let result = if self.mode == BrowserMode::NameOnly || !path.is_dir() {
-            normalize_single_file(path, target)
+        if self.mode == BrowserMode::NameOnly || !path.is_dir() {
+            normalize_single_file(path, target).map_err(|e| e.to_string())?;
         } else {
             let recursive = self.mode == BrowserMode::Recursive;
-            normalize_directory(path, recursive, target)
-        };
-
-        result.map_err(|e| e.to_string())?;
+            normalize_directory(path, recursive, target).map_err(|e| e.to_string())?;
+        }
 
         // Refresh after conversion
         self.dir_browser.refresh();
