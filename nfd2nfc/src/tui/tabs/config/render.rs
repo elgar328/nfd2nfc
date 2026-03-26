@@ -12,8 +12,8 @@ const CONFIG_TABLE_WIDTHS: [ratatui::layout::Constraint; 5] = [
     ratatui::layout::Constraint::Length(3),
     ratatui::layout::Constraint::Min(20),
     ratatui::layout::Constraint::Length(8),
-    ratatui::layout::Constraint::Length(14),
-    ratatui::layout::Constraint::Length(12),
+    ratatui::layout::Constraint::Length(11),
+    ratatui::layout::Constraint::Length(13),
 ];
 
 use crate::tui::app::events::MouseState;
