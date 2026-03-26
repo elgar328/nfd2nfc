@@ -69,7 +69,7 @@ impl PathMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum PathStatus {
     Active,
     NotFound,
@@ -98,7 +98,7 @@ impl PathStatus {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PathEntry {
     pub raw: String,
     pub action: PathAction,

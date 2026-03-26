@@ -5,7 +5,7 @@ use std::sync::mpsc::Sender;
 use unicode_normalization::UnicodeNormalization;
 
 /// Log entry with timestamp and message
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct LogEntry {
     pub display_time: String,   // UI display: "11:23:45"
     pub full_timestamp: String, // Query use: "2026-01-21 11:23:45.123456+0900"

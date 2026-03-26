@@ -1,0 +1,45 @@
+/// Check GitHub Releases for a newer version of nfd2nfc.
+/// Returns `Some(latest_version)` if a newer version exists, `None` otherwise.
+pub fn check_latest_version() -> Option<String> {
+    let resp = ureq::get("https://api.github.com/repos/elgar328/nfd2nfc/releases/latest")
+        .header("User-Agent", "nfd2nfc")
+        .call()
+        .ok()?;
+    let json: serde_json::Value = resp.into_body().read_json().ok()?;
+    let tag = json.get("tag_name")?.as_str()?;
+    let latest = tag.strip_prefix('v').unwrap_or(tag);
+    let current = env!("CARGO_PKG_VERSION").trim_end_matches("-dev");
+
+    if is_newer(latest, current) {
+        Some(latest.to_string())
+    } else {
+        None
+    }
+}
+
+/// Compare two semver strings. Returns true if `latest` is strictly newer than `current`.
+pub fn is_newer(latest: &str, current: &str) -> bool {
+    let parse = |s: &str| -> (u64, u64, u64) {
+        let mut parts = s.split('.');
+        let major = parts.next().and_then(|p| p.parse().ok()).unwrap_or(0);
+        let minor = parts.next().and_then(|p| p.parse().ok()).unwrap_or(0);
+        let patch = parts.next().and_then(|p| p.parse().ok()).unwrap_or(0);
+        (major, minor, patch)
+    };
+    parse(latest) > parse(current)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_newer() {
+        assert!(is_newer("2.0.1", "2.0.0"));
+        assert!(is_newer("2.1.0", "2.0.9"));
+        assert!(is_newer("3.0.0", "2.9.9"));
+        assert!(!is_newer("2.0.0", "2.0.0"));
+        assert!(!is_newer("1.9.9", "2.0.0"));
+        assert!(!is_newer("2.0.0", "2.0.1"));
+    }
+}

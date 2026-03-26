@@ -4,11 +4,13 @@ version = { workspace = true }
 edition = "2024"
 
 [dependencies]
+clap = { workspace = true }
 crossterm = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
 nfd2nfc-core = { path = "../nfd2nfc-core" }
 ratatui = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 unicode-normalization = { workspace = true }

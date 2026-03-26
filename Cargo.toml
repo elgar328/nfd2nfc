@@ -6,6 +6,7 @@ resolver = "3"
 version = "2.0.8-dev"
 
 [workspace.dependencies]
+clap = { version = "4", features = ["derive"] }
 fern = "0.7"
 libc = "0.2"
 log = "0.4"

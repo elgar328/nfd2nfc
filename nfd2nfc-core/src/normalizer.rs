@@ -138,16 +138,17 @@ pub fn normalize_single_file(
     }
 
     let new_name = target.convert(&actual_name);
+    let actual_path = target_path.with_file_name(&actual_name);
     let new_path = target_path.with_file_name(&new_name);
 
-    fs::rename(target_path, &new_path).map_err(|e| NormalizerError::RenameError {
-        from: target_path.display().to_string(),
+    fs::rename(&actual_path, &new_path).map_err(|e| NormalizerError::RenameError {
+        from: actual_path.display().to_string(),
         to: new_path.display().to_string(),
         source: e,
     })?;
 
     Ok(Some(ConversionResult {
-        from: target_path.to_path_buf(),
+        from: actual_path,
         to: new_path,
     }))
 }

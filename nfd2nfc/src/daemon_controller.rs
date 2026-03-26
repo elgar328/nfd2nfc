@@ -98,7 +98,7 @@ fn is_plist_stale() -> bool {
 }
 
 /// Find the watcher binary path as a sibling of the current executable.
-fn watcher_binary_path() -> Result<std::path::PathBuf, String> {
+pub(crate) fn watcher_binary_path() -> Result<std::path::PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| format!("Failed to get current exe: {e}"))?;
     let dir = exe
         .parent()
