@@ -50,17 +50,17 @@ fn path_description(idx: usize, entries: &[PathEntry]) -> String {
         }
         PathStatus::Redundant(n) => {
             if entry.canonical.is_some() && entry.canonical == entries[*n].canonical {
-                format!("Redundant: same path as #{}.", n + 1)
+                format!("Same path as #{}. This rule is not applied.", n + 1)
             } else {
-                format!("Redundant: already covered by #{}.", n + 1)
+                format!("Already covered by #{}. This rule is not applied.", n + 1)
             }
         }
         PathStatus::Overridden(n) => {
             format!("Overridden by #{}. This rule is not applied.", n + 1)
         }
-        PathStatus::NotFound => "Path not found: this rule is not applied.".to_string(),
-        PathStatus::NotADirectory => "Not a directory: this rule is not applied.".to_string(),
-        PathStatus::PermissionDenied => "Permission denied: this rule is not applied.".to_string(),
+        PathStatus::NotFound => "Path not found. This rule is not applied.".to_string(),
+        PathStatus::NotADirectory => "Not a directory. This rule is not applied.".to_string(),
+        PathStatus::PermissionDenied => "Permission denied. This rule is not applied.".to_string(),
     };
     format!("{}\n{}", entry.raw, desc)
 }
