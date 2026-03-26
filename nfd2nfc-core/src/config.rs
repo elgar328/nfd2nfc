@@ -76,6 +76,7 @@ pub enum PathStatus {
     NotADirectory,
     PermissionDenied,
     Redundant(usize),
+    Overridden(usize),
 }
 
 impl PathStatus {
@@ -86,6 +87,7 @@ impl PathStatus {
             PathStatus::NotADirectory => "Not a Dir",
             PathStatus::PermissionDenied => "No Access",
             PathStatus::Redundant(_) => "Redundant",
+            PathStatus::Overridden(_) => "Overridden",
         }
     }
 
@@ -93,6 +95,7 @@ impl PathStatus {
         match self {
             PathStatus::Active => "✓",
             PathStatus::Redundant(_) => "~",
+            PathStatus::Overridden(_) => "!",
             PathStatus::NotFound | PathStatus::NotADirectory | PathStatus::PermissionDenied => "✗",
         }
     }
@@ -229,21 +232,6 @@ fn build_processing_order(entries: &[PathEntry]) -> Vec<usize> {
     order
 }
 
-/// Check if another entry at a lower index has the same canonical path and is Active.
-fn find_duplicate(
-    entries: &[PathEntry],
-    statuses: &[PathStatus],
-    idx: usize,
-    canonical: &Path,
-) -> Option<usize> {
-    (0..idx).find(|&j| {
-        entries[j]
-            .canonical
-            .as_ref()
-            .is_some_and(|jc| *jc == *canonical && matches!(statuses[j], PathStatus::Active))
-    })
-}
-
 /// Find the most specific Active Recursive parent entry that covers the given canonical path.
 fn find_fallback_parent(
     entries: &[PathEntry],
@@ -275,17 +263,20 @@ fn find_fallback_parent(
 
 /// Compute redundancy statuses for all entries.
 ///
-/// Processing order: by canonical path length (shortest first), same length by index.
-/// For each valid entry E:
-/// 1. Same canonical path at a lower index and Active → Redundant(that index)
-/// 2. Find fallback F: most specific Active Recursive entry (excluding E) that is a prefix of E
-/// 3. F exists and F.action == E.action → Redundant(F's index)
-/// 4. F exists and F.action != E.action → Active (exception)
-/// 5. No F → Active
+/// Phase 1 — Resolve exact-path duplicates (same canonical path):
+///   For each group sharing a canonical path, determine a single winner:
+///   - Winning action = action of the first entry (lowest index)
+///   - Among entries with the winning action: prefer Recursive over Children, then lowest index
+///   - Winner = Active; same-action others = Redundant(winner); different-action = Overridden(winner)
+///
+/// Phase 2 — Resolve parent-child relationships:
+///   Processing order: by canonical path length (shortest first), same length by index.
+///   For each Active entry E:
+///   - Find fallback F: most specific Active Recursive entry that is a prefix of E
+///   - F.action == E.action → Redundant(F)
+///   - F.action != E.action → Active (override of F)
+///   - No F → Active
 pub(crate) fn compute_statuses(entries: &mut [PathEntry]) {
-    let order = build_processing_order(entries);
-
-    // Track statuses and overrides separately to avoid borrow issues.
     let mut statuses: Vec<PathStatus> = entries
         .iter()
         .map(|e| {
@@ -298,18 +289,69 @@ pub(crate) fn compute_statuses(entries: &mut [PathEntry]) {
         .collect();
     let mut overrides: Vec<Option<usize>> = vec![None; entries.len()];
 
+    // Phase 1: Resolve exact-path duplicates
+    for i in 0..entries.len() {
+        if !matches!(statuses[i], PathStatus::Active) {
+            continue;
+        }
+        let Some(ref canonical_i) = entries[i].canonical else {
+            continue;
+        };
+
+        // Collect group: all Active entries with the same canonical path
+        let group: Vec<usize> = (i..entries.len())
+            .filter(|&j| {
+                matches!(statuses[j], PathStatus::Active)
+                    && entries[j]
+                        .canonical
+                        .as_ref()
+                        .is_some_and(|c| c == canonical_i)
+            })
+            .collect();
+
+        if group.len() < 2 {
+            continue;
+        }
+
+        // Winning action = first entry's action (lowest index in group)
+        let winning_action = entries[group[0]].action;
+
+        // Among entries with the winning action: prefer Recursive, then lowest index
+        let winner = *group
+            .iter()
+            .filter(|&&j| entries[j].action == winning_action)
+            .min_by_key(|&&j| {
+                let mode_priority = match entries[j].mode {
+                    PathMode::Recursive => 0u8,
+                    PathMode::Children => 1u8,
+                };
+                (mode_priority, j)
+            })
+            .unwrap(); // at least group[0] has winning_action
+
+        // Classify all non-winners
+        for &j in &group {
+            if j == winner {
+                continue;
+            }
+            if entries[j].action != winning_action {
+                statuses[j] = PathStatus::Overridden(winner);
+            } else {
+                statuses[j] = PathStatus::Redundant(winner);
+            }
+        }
+    }
+
+    // Phase 2: Resolve parent-child relationships
+    let order = build_processing_order(entries);
     for &idx in &order {
+        if !matches!(statuses[idx], PathStatus::Active) {
+            continue;
+        }
         let Some(canonical) = entries[idx].canonical.as_ref() else {
             continue;
         };
 
-        // Rule 1: same canonical path at lower index that is Active
-        if let Some(dup_idx) = find_duplicate(entries, &statuses, idx, canonical) {
-            statuses[idx] = PathStatus::Redundant(dup_idx);
-            continue;
-        }
-
-        // Rule 2-5: find fallback parent and determine status
         if let Some(f_idx) = find_fallback_parent(entries, &statuses, idx, canonical) {
             if entries[f_idx].action == entries[idx].action {
                 statuses[idx] = PathStatus::Redundant(f_idx);
@@ -317,8 +359,6 @@ pub(crate) fn compute_statuses(entries: &mut [PathEntry]) {
                 statuses[idx] = PathStatus::Active;
                 overrides[idx] = Some(f_idx);
             }
-        } else {
-            statuses[idx] = PathStatus::Active;
         }
     }
 
@@ -402,5 +442,215 @@ impl Config {
         }
         fs::write(path, toml_content)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build a PathEntry with a synthetic canonical path (no filesystem access needed).
+    fn make_entry(canonical: &str, action: PathAction, mode: PathMode) -> PathEntry {
+        PathEntry {
+            raw: canonical.to_string(),
+            action,
+            mode,
+            canonical: Some(PathBuf::from(canonical)),
+            status: PathStatus::Active,
+            overrides: None,
+        }
+    }
+
+    fn make_not_found(raw: &str) -> PathEntry {
+        PathEntry {
+            raw: raw.to_string(),
+            action: PathAction::Watch,
+            mode: PathMode::Recursive,
+            canonical: None,
+            status: PathStatus::NotFound,
+            overrides: None,
+        }
+    }
+
+    // --- 2 entries: same path ---
+
+    #[test]
+    fn duplicate_same_action_same_mode() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Redundant(0));
+    }
+
+    #[test]
+    fn duplicate_same_action_recursive_over_children() {
+        // Children first, Recursive second — Recursive should win
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Children),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Redundant(1));
+        assert_eq!(entries[1].status, PathStatus::Active);
+    }
+
+    #[test]
+    fn duplicate_same_action_children_under_recursive() {
+        // Recursive first, Children second — Recursive keeps Active
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Children),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Redundant(0));
+    }
+
+    #[test]
+    fn duplicate_different_action() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a", PathAction::Ignore, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Overridden(0));
+    }
+
+    #[test]
+    fn duplicate_different_action_ignore_first() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Ignore, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Overridden(0));
+    }
+
+    // --- 3+ entries: same path (group processing) ---
+
+    #[test]
+    fn triple_same_action_same_mode() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Redundant(0));
+        assert_eq!(entries[2].status, PathStatus::Redundant(0));
+    }
+
+    #[test]
+    fn triple_children_children_recursive() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Children),
+            make_entry("/a", PathAction::Watch, PathMode::Children),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        // Recursive (#2) wins
+        assert_eq!(entries[0].status, PathStatus::Redundant(2));
+        assert_eq!(entries[1].status, PathStatus::Redundant(2));
+        assert_eq!(entries[2].status, PathStatus::Active);
+    }
+
+    #[test]
+    fn triple_watch_ignore_watch() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a", PathAction::Ignore, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Overridden(0));
+        assert_eq!(entries[2].status, PathStatus::Redundant(0));
+    }
+
+    #[test]
+    fn triple_watch_children_ignore_watch_recursive() {
+        // Watch/Children, Ignore/Recursive, Watch/Recursive
+        // Winning action = Watch (first), winner = Watch/Recursive (#2)
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Children),
+            make_entry("/a", PathAction::Ignore, PathMode::Recursive),
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Redundant(2));
+        assert_eq!(entries[1].status, PathStatus::Overridden(2));
+        assert_eq!(entries[2].status, PathStatus::Active);
+    }
+
+    // --- Parent-child relationships (Phase 2 regression) ---
+
+    #[test]
+    fn parent_child_same_action() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a/b", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Redundant(0));
+    }
+
+    #[test]
+    fn parent_child_different_action() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_entry("/a/b", PathAction::Ignore, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Active);
+        assert_eq!(entries[1].overrides, Some(0));
+    }
+
+    #[test]
+    fn children_mode_parent_no_coverage() {
+        // Children mode parent does not cover child subdirectories
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Children),
+            make_entry("/a/b", PathAction::Watch, PathMode::Recursive),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::Active);
+        assert!(entries[1].overrides.is_none());
+    }
+
+    // --- Edge cases ---
+
+    #[test]
+    fn empty_entries() {
+        let mut entries: Vec<PathEntry> = vec![];
+        compute_statuses(&mut entries);
+        // No panic
+    }
+
+    #[test]
+    fn single_entry() {
+        let mut entries = vec![make_entry("/a", PathAction::Watch, PathMode::Recursive)];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert!(entries[0].overrides.is_none());
+    }
+
+    #[test]
+    fn not_found_entry_keeps_status() {
+        let mut entries = vec![
+            make_entry("/a", PathAction::Watch, PathMode::Recursive),
+            make_not_found("/nonexistent"),
+        ];
+        compute_statuses(&mut entries);
+        assert_eq!(entries[0].status, PathStatus::Active);
+        assert_eq!(entries[1].status, PathStatus::NotFound);
     }
 }

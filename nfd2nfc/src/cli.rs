@@ -55,6 +55,7 @@ fn cmd_status(json: bool) -> Result<(), Box<dyn std::error::Error>> {
     let (config, _) = config::load_config();
     let mut active = 0u32;
     let mut redundant = 0u32;
+    let mut overridden = 0u32;
     let mut not_found = 0u32;
     let mut not_a_directory = 0u32;
     let mut permission_denied = 0u32;
@@ -62,6 +63,7 @@ fn cmd_status(json: bool) -> Result<(), Box<dyn std::error::Error>> {
         match entry.status {
             PathStatus::Active => active += 1,
             PathStatus::Redundant(_) => redundant += 1,
+            PathStatus::Overridden(_) => overridden += 1,
             PathStatus::NotFound => not_found += 1,
             PathStatus::NotADirectory => not_a_directory += 1,
             PathStatus::PermissionDenied => permission_denied += 1,
@@ -88,7 +90,7 @@ fn cmd_status(json: bool) -> Result<(), Box<dyn std::error::Error>> {
         };
 
         println!(
-            r#"{{"watcher":"{}","version":"{}","binary":"{}","watcher_binary":{},"config":{{"path":"{}","exists":{}}},"plist":{{"path":"{}","exists":{}}},"registered_paths":{{"total":{},"active":{},"redundant":{},"not_found":{},"not_a_directory":{},"permission_denied":{}}},"full_disk_access":"{}","update_status":"{}","latest_version":{}}}"#,
+            r#"{{"watcher":"{}","version":"{}","binary":"{}","watcher_binary":{},"config":{{"path":"{}","exists":{}}},"plist":{{"path":"{}","exists":{}}},"registered_paths":{{"total":{},"active":{},"redundant":{},"overridden":{},"not_found":{},"not_a_directory":{},"permission_denied":{}}},"full_disk_access":"{}","update_status":"{}","latest_version":{}}}"#,
             if watcher_running {
                 "running"
             } else {
@@ -104,6 +106,7 @@ fn cmd_status(json: bool) -> Result<(), Box<dyn std::error::Error>> {
             total,
             active,
             redundant,
+            overridden,
             not_found,
             not_a_directory,
             permission_denied,
@@ -183,6 +186,9 @@ fn cmd_status(json: bool) -> Result<(), Box<dyn std::error::Error>> {
             }
             if redundant > 0 {
                 parts.push(format!("{} redundant", redundant));
+            }
+            if overridden > 0 {
+                parts.push(format!("{} overridden", overridden));
             }
             if not_found > 0 {
                 parts.push(format!("{} not found", not_found));
@@ -434,6 +440,7 @@ fn path_status_to_str(status: &PathStatus) -> &'static str {
     match status {
         PathStatus::Active => "active",
         PathStatus::Redundant(_) => "redundant",
+        PathStatus::Overridden(_) => "overridden",
         PathStatus::NotFound => "not_found",
         PathStatus::NotADirectory => "not_a_directory",
         PathStatus::PermissionDenied => "permission_denied",
@@ -449,6 +456,14 @@ fn path_status_note(status: &PathStatus, paths: &[PathEntry]) -> Option<String> 
                 "covered by #{}: {}",
                 idx + 1,
                 abbreviate_path_str(&covered_by.raw)
+            ))
+        }
+        PathStatus::Overridden(idx) => {
+            let conflicts_with = &paths[*idx];
+            Some(format!(
+                "overridden by #{}: {}",
+                idx + 1,
+                abbreviate_path_str(&conflicts_with.raw)
             ))
         }
         PathStatus::NotFound => Some("path does not exist".to_string()),
