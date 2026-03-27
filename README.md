@@ -26,15 +26,16 @@ macOS stores filenames in NFD, while Windows and Linux use NFC. This mismatch ca
 - Git sees identical files as untracked or modified
 - Cloud sync and archive tools fail to match paths
 
-**nfd2nfc** provides an interactive TUI and a background watcher service that handles conversion automatically.
+**nfd2nfc** provides an interactive TUI, a scriptable CLI, and a background watcher service that handles conversion automatically.
 
 ## Features
 
 - **Real-time monitoring** — Converts NFD filenames to NFC as soon as they appear
 - **Flexible watch paths** — Mix `watch`/`ignore` actions with `recursive`/`children` modes to control exactly which directories are monitored
-- **Manual conversion** — Browse the filesystem and convert names between NFD and NFC on the spot
+- **Manual conversion** — Convert filenames between NFD and NFC, individually or recursively
 - **Log viewer** — Review past watcher logs or follow new entries live
-- **Intuitive controls** — Every keybinding is shown on screen, and full mouse support is included
+- **Intuitive TUI** — Every keybinding is shown on screen, with full mouse support
+- **CLI mode** — Script and AI-agent friendly, with `--json` output and `--dry-run` previews
 
 ## Home
 
@@ -60,6 +61,37 @@ The Logs tab lets you browse past watcher logs and follow new entries in real ti
 
 The Browser tab lets you inspect files and directories for their Unicode normalization form and convert them directly. The watcher only picks up newly created or modified files, so use this tab to convert any existing NFD names.
 
+## CLI Mode
+
+Running `nfd2nfc` without arguments launches the TUI. Add a command to use CLI mode. Run `nfd2nfc <command> --help` for detailed options.
+
+```
+nfd2nfc status [--json]
+nfd2nfc watcher start|stop|restart
+nfd2nfc config list [--json]
+nfd2nfc config add <path> [--action watch|ignore] [--mode recursive|children] [--dry-run] [--json]
+nfd2nfc config remove <index> [--dry-run] [--json]
+nfd2nfc config sort
+nfd2nfc convert <path> [--mode name|children|recursive] [--target nfc|nfd] [--dry-run] [--json]
+nfd2nfc log show [--last 30m] [--json]
+nfd2nfc log stream [--json]
+```
+
+Example:
+
+```
+$ nfd2nfc status
+Watcher:          running
+Version:          2.1.0
+Binary:           /opt/homebrew/Cellar/nfd2nfc/2.1.0/bin/nfd2nfc
+Watcher binary:   /opt/homebrew/Cellar/nfd2nfc/2.1.0/bin/nfd2nfc-watcher
+Config:           ~/.config/nfd2nfc/config.toml
+Plist:            ~/Library/LaunchAgents/io.github.elgar328.nfd2nfc.plist
+Registered paths: 6 total (4 active, 1 overridden, 1 not found)
+Full Disk Access: granted
+Update:           up to date
+```
+
 ## Limitations
 
 nfd2nfc solves the root cause of filenames breaking across operating systems — macOS storing them in NFD. However, other software (browsers, email services, cloud storage, messaging apps, archive tools, etc.) may independently convert filenames to NFD when transferring files. This is application-level behavior outside the scope of nfd2nfc.
@@ -78,7 +110,7 @@ Then run it:
 nfd2nfc
 ```
 
-On first launch, the watcher service is automatically registered as a LaunchAgent. After that, you can start and stop it from the app.
+On first launch, the watcher service is automatically registered as a LaunchAgent. After that, you can start and stop it from the TUI or CLI.
 
 ### Permissions
 
@@ -88,6 +120,7 @@ If macOS repeatedly prompts for folder access when the watcher converts files, g
 2. Open **System Settings → Privacy & Security → Full Disk Access**
 3. If `nfd2nfc-watcher` is already listed, remove it completely (click `-`, not just toggle off)
 4. Click `+`, press `Cmd+Shift+G`, paste the path from step 1, and add it
+5. Run `nfd2nfc status` and verify that **Full Disk Access** shows `granted`
 
 After upgrading to a new version, you must re-do the steps above to grant Full Disk Access again.
 
