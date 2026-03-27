@@ -1203,7 +1203,7 @@ dependencies = [
 
 [[package]]
 name = "nfd2nfc"
-version = "2.0.8-dev"
+version = "2.1.0"
 dependencies = [
  "clap",
  "crossterm",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "nfd2nfc-core"
-version = "2.0.8-dev"
+version = "2.1.0"
 dependencies = [
  "dirs",
  "fern",
@@ -1241,7 +1241,7 @@ dependencies = [
 
 [[package]]
 name = "nfd2nfc-watcher"
-version = "2.0.8-dev"
+version = "2.1.0"
 dependencies = [
  "dirs",
  "log",
