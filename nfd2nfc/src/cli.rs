@@ -4,6 +4,8 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::{Command as ProcessCommand, Stdio};
 
+use serde_json::json;
+
 use nfd2nfc_core::config::{self, PathAction, PathEntry, PathMode, PathStatus};
 use nfd2nfc_core::constants::{CONFIG_PATH, NFD2NFC_SERVICE_LABEL, PLIST_PATH};
 use nfd2nfc_core::normalizer::{self, NormalizationTarget, get_actual_file_name};
@@ -78,42 +80,42 @@ fn cmd_status(json: bool) -> Result<(), Box<dyn std::error::Error>> {
     let update_status = check_update_status_with_timeout();
 
     if json {
-        let watcher_binary_json = match &watcher_binary_display {
-            Some(p) => format!(r#"{{"path":"{}","exists":{}}}"#, p, watcher_binary_exists),
-            None => r#"{"path":null,"exists":false}"#.to_string(),
-        };
-
         let (update_status_str, latest_version) = match &update_status {
-            UpdateStatus::Available(ver) => ("available", format!(r#""{}""#, ver)),
-            UpdateStatus::UpToDate(ver) => ("up_to_date", format!(r#""{}""#, ver)),
-            UpdateStatus::Unknown => ("unknown", "null".to_string()),
+            UpdateStatus::Available(ver) => ("available", Some(ver.as_str())),
+            UpdateStatus::UpToDate(ver) => ("up_to_date", Some(ver.as_str())),
+            UpdateStatus::Unknown => ("unknown", None),
         };
 
-        println!(
-            r#"{{"watcher":"{}","version":"{}","binary":"{}","watcher_binary":{},"config":{{"path":"{}","exists":{}}},"plist":{{"path":"{}","exists":{}}},"registered_paths":{{"total":{},"active":{},"redundant":{},"overridden":{},"not_found":{},"not_a_directory":{},"permission_denied":{}}},"full_disk_access":"{}","update_status":"{}","latest_version":{}}}"#,
-            if watcher_running {
-                "running"
-            } else {
-                "stopped"
+        let output = json!({
+            "watcher": if watcher_running { "running" } else { "stopped" },
+            "version": version,
+            "binary": binary,
+            "watcher_binary": {
+                "path": watcher_binary_display,
+                "exists": watcher_binary_exists,
             },
-            version,
-            binary,
-            watcher_binary_json,
-            config_path,
-            config_exists,
-            plist_path,
-            plist_exists,
-            total,
-            active,
-            redundant,
-            overridden,
-            not_found,
-            not_a_directory,
-            permission_denied,
-            fda,
-            update_status_str,
-            latest_version,
-        );
+            "config": {
+                "path": config_path,
+                "exists": config_exists,
+            },
+            "plist": {
+                "path": plist_path,
+                "exists": plist_exists,
+            },
+            "registered_paths": {
+                "total": total,
+                "active": active,
+                "redundant": redundant,
+                "overridden": overridden,
+                "not_found": not_found,
+                "not_a_directory": not_a_directory,
+                "permission_denied": permission_denied,
+            },
+            "full_disk_access": fda,
+            "update_status": update_status_str,
+            "latest_version": latest_version,
+        });
+        println!("{}", output);
     } else {
         println!(
             "Watcher:          {}",
@@ -476,34 +478,58 @@ fn abbreviate_path_str(path: &str) -> String {
     abbreviate_home_path(Path::new(path))
 }
 
-fn entry_to_json(index: usize, entry: &PathEntry, paths: &[PathEntry]) -> String {
+fn entry_to_json(index: usize, entry: &PathEntry, paths: &[PathEntry]) -> serde_json::Value {
     let note = path_status_note(&entry.status, paths);
-    let note_json = match &note {
-        Some(n) => format!(r#""{}""#, n),
-        None => "null".to_string(),
-    };
-    format!(
-        r#"{{"index":{},"path":"{}","action":"{}","mode":"{}","status":"{}","note":{}}}"#,
-        index + 1,
-        abbreviate_path_str(&entry.raw),
-        entry.action.as_str().to_lowercase(),
-        entry.mode.as_str().to_lowercase(),
-        path_status_to_str(&entry.status),
-        note_json,
-    )
+    json!({
+        "index": index + 1,
+        "path": abbreviate_path_str(&entry.raw),
+        "action": entry.action.as_str().to_lowercase(),
+        "mode": entry.mode.as_str().to_lowercase(),
+        "status": path_status_to_str(&entry.status),
+        "note": note,
+    })
+}
+
+fn affected_entries_json(affected: &[usize], paths: &[PathEntry]) -> Vec<serde_json::Value> {
+    affected
+        .iter()
+        .map(|&i| entry_to_json(i, &paths[i], paths))
+        .collect()
+}
+
+fn print_affected_entries(affected: &[usize], paths: &[PathEntry]) {
+    if affected.is_empty() {
+        println!("  No existing entries affected.");
+    } else {
+        println!("  Affected entries:");
+        for &i in affected {
+            let e = &paths[i];
+            let n = path_status_note(&e.status, paths);
+            println!(
+                "    #{}: {} → {}{}",
+                i + 1,
+                abbreviate_path_str(&e.raw),
+                path_status_to_str(&e.status),
+                match &n {
+                    Some(n) => format!(" ({})", n),
+                    None => String::new(),
+                },
+            );
+        }
+    }
 }
 
 fn cmd_config_list(json: bool) -> Result<(), Box<dyn std::error::Error>> {
     let (config, _) = config::load_config();
 
     if json {
-        let entries: Vec<String> = config
+        let entries: Vec<serde_json::Value> = config
             .paths
             .iter()
             .enumerate()
             .map(|(i, entry)| entry_to_json(i, entry, &config.paths))
             .collect();
-        println!("[{}]", entries.join(",\n "));
+        println!("{}", json!(entries));
     } else {
         if config.paths.is_empty() {
             println!("No paths configured.");
@@ -588,14 +614,10 @@ fn cmd_config_add(
 
         if json {
             let added_json = entry_to_json(new_idx, new_entry, &config.paths);
-            let affected_json: Vec<String> = affected
-                .iter()
-                .map(|&i| entry_to_json(i, &config.paths[i], &config.paths))
-                .collect();
+            let affected_json = affected_entries_json(&affected, &config.paths);
             println!(
-                r#"{{"would_add":{},"affected":[{}]}}"#,
-                added_json,
-                affected_json.join(","),
+                "{}",
+                json!({"would_add": added_json, "affected": affected_json})
             );
         } else {
             let note = path_status_note(&new_entry.status, &config.paths);
@@ -613,33 +635,15 @@ fn cmd_config_add(
                     None => String::new(),
                 },
             );
-            if affected.is_empty() {
-                println!("  No existing entries affected.");
-            } else {
-                println!("  Affected entries:");
-                for &i in &affected {
-                    let e = &config.paths[i];
-                    let n = path_status_note(&e.status, &config.paths);
-                    println!(
-                        "    #{}: {} → {}{}",
-                        i + 1,
-                        abbreviate_path_str(&e.raw),
-                        path_status_to_str(&e.status),
-                        match &n {
-                            Some(n) => format!(" ({})", n),
-                            None => String::new(),
-                        },
-                    );
-                }
-            }
+            print_affected_entries(&affected, &config.paths);
         }
     } else {
         config.save_to_file(&CONFIG_PATH)?;
 
         if json {
             println!(
-                r#"{{"added":{}}}"#,
-                entry_to_json(new_idx, new_entry, &config.paths)
+                "{}",
+                json!({"added": entry_to_json(new_idx, new_entry, &config.paths)})
             );
         } else {
             println!(
@@ -695,14 +699,10 @@ fn cmd_config_remove(
         }
 
         if json {
-            let affected_json: Vec<String> = affected
-                .iter()
-                .map(|&i| entry_to_json(i, &config.paths[i], &config.paths))
-                .collect();
+            let affected_json = affected_entries_json(&affected, &config.paths);
             println!(
-                r#"{{"would_remove":{},"affected":[{}]}}"#,
-                removed_json,
-                affected_json.join(","),
+                "{}",
+                json!({"would_remove": removed_json, "affected": affected_json})
             );
         } else {
             println!(
@@ -712,25 +712,7 @@ fn cmd_config_remove(
                 removed_entry.action.as_str().to_lowercase(),
                 removed_entry.mode.as_str().to_lowercase(),
             );
-            if affected.is_empty() {
-                println!("  No existing entries affected.");
-            } else {
-                println!("  Affected entries:");
-                for &i in &affected {
-                    let e = &config.paths[i];
-                    let n = path_status_note(&e.status, &config.paths);
-                    println!(
-                        "    #{}: {} → {}{}",
-                        i + 1,
-                        abbreviate_path_str(&e.raw),
-                        path_status_to_str(&e.status),
-                        match &n {
-                            Some(n) => format!(" ({})", n),
-                            None => String::new(),
-                        },
-                    );
-                }
-            }
+            print_affected_entries(&affected, &config.paths);
         }
     } else {
         let removed_info = entry_to_json(idx, &config.paths[idx], &config.paths);
@@ -739,7 +721,7 @@ fn cmd_config_remove(
         config.save_to_file(&CONFIG_PATH)?;
 
         if json {
-            println!(r#"{{"removed":{}}}"#, removed_info);
+            println!("{}", json!({"removed": removed_info}));
         } else {
             println!("Removed #{}: {}", index, abbreviate_path_str(&removed.raw));
         }
@@ -855,15 +837,13 @@ fn cmd_convert_dry_run(
     }
 
     if json {
-        let paths_json: Vec<String> = would_convert
-            .iter()
-            .map(|p| format!(r#""{}""#, p))
-            .collect();
         println!(
-            r#"{{"target":"{}","would_convert":[{}],"count":{}}}"#,
-            target.to_string().to_lowercase(),
-            paths_json.join(","),
-            would_convert.len(),
+            "{}",
+            json!({
+                "target": target.to_string().to_lowercase(),
+                "would_convert": would_convert,
+                "count": would_convert.len(),
+            })
         );
     } else if would_convert.is_empty() {
         println!("No files need conversion.");
@@ -891,15 +871,16 @@ fn cmd_convert_execute(
         ConvertMode::Name => {
             let result = normalizer::normalize_single_file(path, target)?;
             if json {
-                let converted: Vec<String> = result
-                    .iter()
-                    .map(|r| format!(r#""{}""#, abbreviate_home_path(&r.to)))
-                    .collect();
+                let converted: Vec<String> =
+                    result.iter().map(|r| abbreviate_home_path(&r.to)).collect();
                 println!(
-                    r#"{{"target":"{}","converted":[{}],"errors":[],"count":{}}}"#,
-                    target.to_string().to_lowercase(),
-                    converted.join(","),
-                    converted.len(),
+                    "{}",
+                    json!({
+                        "target": target.to_string().to_lowercase(),
+                        "converted": converted,
+                        "errors": [],
+                        "count": converted.len(),
+                    })
                 );
             } else if let Some(r) = &result {
                 println!("Converted to {}:", target);
@@ -917,25 +898,26 @@ fn cmd_convert_execute(
                 let converted: Vec<String> = result
                     .converted
                     .iter()
-                    .map(|r| format!(r#""{}""#, abbreviate_home_path(&r.to)))
+                    .map(|r| abbreviate_home_path(&r.to))
                     .collect();
-                let errors: Vec<String> = result
+                let errors: Vec<serde_json::Value> = result
                     .errors
                     .iter()
                     .map(|e| {
-                        format!(
-                            r#"{{"path":"{}","error":"{}"}}"#,
-                            abbreviate_home_path(&e.path),
-                            e.error
-                        )
+                        json!({
+                            "path": abbreviate_home_path(&e.path),
+                            "error": e.error.to_string(),
+                        })
                     })
                     .collect();
                 println!(
-                    r#"{{"target":"{}","converted":[{}],"errors":[{}],"count":{}}}"#,
-                    target.to_string().to_lowercase(),
-                    converted.join(","),
-                    errors.join(","),
-                    result.converted.len(),
+                    "{}",
+                    json!({
+                        "target": target.to_string().to_lowercase(),
+                        "converted": converted,
+                        "errors": errors,
+                        "count": result.converted.len(),
+                    })
                 );
             } else if result.converted.is_empty() && result.errors.is_empty() {
                 println!("No files need conversion.");
@@ -981,17 +963,11 @@ fn cmd_log_show(last: &str, json: bool) -> Result<(), Box<dyn std::error::Error>
         log_service::get_log_history(last).map_err(|e| format!("Failed to get logs: {}", e))?;
 
     if json {
-        let items: Vec<String> = entries
+        let items: Vec<serde_json::Value> = entries
             .iter()
-            .map(|e| {
-                format!(
-                    r#"{{"timestamp":"{}","message":{}}}"#,
-                    e.display_time,
-                    serde_json::to_string(&e.message).unwrap_or_default(),
-                )
-            })
+            .map(|e| json!({"timestamp": e.display_time, "message": e.message}))
             .collect();
-        println!("[{}]", items.join(",\n "));
+        println!("{}", json!(items));
     } else if entries.is_empty() {
         println!("No logs found for the last {}.", last);
     } else {
@@ -1022,9 +998,8 @@ fn cmd_log_stream(json: bool) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(entry) = log_service::extract_log_entry(&line) {
             if json {
                 println!(
-                    r#"{{"timestamp":"{}","message":{}}}"#,
-                    entry.display_time,
-                    serde_json::to_string(&entry.message).unwrap_or_default(),
+                    "{}",
+                    json!({"timestamp": entry.display_time, "message": entry.message})
                 );
             } else {
                 println!("{} {}", entry.display_time, entry.message);
