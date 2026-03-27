@@ -7,7 +7,7 @@ The Homebrew-installed version and local development builds share the same servi
 ## Switching to Development (brew → dev)
 
 ```bash
-# 1. Uninstall the Homebrew version (automatically stops the service and removes the plist)
+# 1. Uninstall the Homebrew version (the watcher detects binary removal and auto-cleans the plist)
 brew uninstall nfd2nfc
 
 # 2. Build the release binary
@@ -21,17 +21,17 @@ cargo run --bin nfd2nfc
 
 After making code changes:
 
-- **TUI changes only**: Run `cargo run --bin nfd2nfc` to test immediately.
-- **Watcher changes**: Run `cargo build --release` first, then restart the watcher from the TUI. If the plist is outdated, the TUI automatically restarts the service.
+- **nfd2nfc changes only**: Run `cargo run --bin nfd2nfc` to test immediately.
+- **Watcher changes**: Run `cargo build --release` first, then restart the watcher from the TUI or CLI. If the plist is outdated, the TUI automatically restarts the service.
 
 ## Switching Back to Homebrew (dev → brew)
 
 ```bash
-# 1. Start the watcher from the TUI and confirm it is running
+# 1. Start the watcher from the TUI or CLI and confirm it is running
 
 # 2. Remove the development binary (the watcher detects removal and auto-cleans the plist)
 cargo clean
 
 # 3. Reinstall the Homebrew version
-brew install elgar328/nfd2nfc/nfd2nfc
+brew install nfd2nfc
 ```

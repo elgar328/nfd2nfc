@@ -74,22 +74,25 @@ git commit -m "Bump version to X.Y.(Z+1)-dev"
 git push origin main
 ```
 
+### 5. Submit homebrew-core bump PR
+
+After the GitHub Release is created, submit a version bump PR to homebrew-core:
+
+```bash
+brew bump-formula-pr nfd2nfc --version X.Y.Z
+```
+
 ## Automated Pipeline
 
-The `release.yml` workflow runs automatically when a `v*` tag is pushed. It performs the following:
-
-1. **Build** — Compiles release binaries for both `x86_64-apple-darwin` and `aarch64-apple-darwin` targets
-2. **Universal binary** — Merges the two architecture binaries into universal binaries using `lipo -create`
-3. **Package** — Creates a tarball: `nfd2nfc-{VERSION}-universal-apple-darwin.tar.gz`
-4. **GitHub Release** — Creates a GitHub Release with auto-generated release notes and attaches the tarball
-5. **Homebrew tap update** — Clones `elgar328/homebrew-nfd2nfc`, applies the formula template (`.github/formula-template.rb`) with the new version and SHA256, then pushes the updated formula
+The `release.yml` workflow runs automatically when a `v*` tag is pushed. It creates a GitHub Release with auto-generated release notes. RC tags (e.g., `v2.1.0-rc.1`) are marked as prerelease.
 
 ## Post-release Checklist
 
-- [ ] Verify the [GitHub Release](https://github.com/elgar328/nfd2nfc/releases) was created with the correct tarball
+- [ ] Verify the [GitHub Release](https://github.com/elgar328/nfd2nfc/releases) was created
 - [ ] Write release notes (Step 3) and verify with `gh release view vX.Y.Z`
-- [ ] Verify the Homebrew tap was updated: `brew update && brew info elgar328/nfd2nfc/nfd2nfc`
-- [ ] Confirm installation works: `brew upgrade nfd2nfc` or `brew install elgar328/nfd2nfc/nfd2nfc`
+- [ ] Submit the homebrew-core bump PR: `brew bump-formula-pr nfd2nfc --version X.Y.Z`
+- [ ] After the PR is merged, confirm the formula is updated: `brew update && brew info nfd2nfc`
+- [ ] Confirm installation works: `brew upgrade nfd2nfc`
 
 ## Updating Screenshots
 
@@ -103,8 +106,3 @@ gh release upload assets assets/home.png assets/config.png --clobber
 # Or update all screenshots at once
 gh release upload assets assets/*.png --clobber
 ```
-
-## Release Artifacts
-
-- **Tarball**: `nfd2nfc-{VERSION}-universal-apple-darwin.tar.gz` (contains `nfd2nfc` and `nfd2nfc-watcher` universal binaries)
-- **Formula template**: `.github/formula-template.rb` — the release workflow substitutes `PLACEHOLDER_TAG`, `PLACEHOLDER_VERSION`, and `PLACEHOLDER_SHA256` placeholders with actual values
