@@ -74,12 +74,12 @@ git commit -m "Bump version to X.Y.(Z+1)-dev"
 git push origin main
 ```
 
-### 5. Submit homebrew-core bump PR
+### 5. Wait for homebrew-core autobump
 
-After the GitHub Release is created, submit a version bump PR to homebrew-core:
+nfd2nfc is on the autobump list. BrewTestBot automatically creates a version bump PR within ~3 hours of a new release. Check the PR status:
 
 ```bash
-brew bump-formula-pr nfd2nfc --version X.Y.Z
+gh search prs --repo Homebrew/homebrew-core nfd2nfc --state open
 ```
 
 ## Automated Pipeline
@@ -90,7 +90,7 @@ The `release.yml` workflow runs automatically when a `v*` tag is pushed. It crea
 
 - [ ] Verify the [GitHub Release](https://github.com/elgar328/nfd2nfc/releases) was created
 - [ ] Write release notes (Step 3) and verify with `gh release view vX.Y.Z`
-- [ ] Submit the homebrew-core bump PR: `brew bump-formula-pr nfd2nfc --version X.Y.Z`
+- [ ] Check that the autobump PR was created: `gh search prs --repo Homebrew/homebrew-core nfd2nfc --state open`
 - [ ] After the PR is merged, confirm the formula is updated: `brew update && brew info nfd2nfc`
 - [ ] Confirm installation works: `brew upgrade nfd2nfc`
 
